@@ -1,6 +1,50 @@
 import { Section } from '../types';
 
 export const sections: Section[] = [
+  // ==========================================
+  // PART 1: FOUNDATIONS
+  // ==========================================
+  {
+    id: 'numpy-fundamentals',
+    title: 'NumPy Fundamentals',
+    description: 'Master NumPy array operations essential for ML development.',
+    icon: '🔢',
+    introduction: `
+# NumPy Fundamentals
+
+NumPy is the backbone of scientific computing in Python. Every ML library builds on it.
+
+## Key Concepts
+
+### Array Creation
+- \`np.array()\`: Create from lists
+- \`np.zeros()\`, \`np.ones()\`: Initialize with values
+- \`np.arange()\`, \`np.linspace()\`: Numeric ranges
+- \`np.eye()\`: Identity matrix
+
+### Indexing & Slicing
+- Basic: \`arr[0]\`, \`arr[1:5]\`
+- Advanced: \`arr[[0, 2, 4]]\`, \`arr[arr > 0]\`
+- Multi-dimensional: \`arr[1, :]\`, \`arr[:, 2:4]\`
+
+### Broadcasting
+Arrays of different shapes can be combined:
+- (3, 4) + (4,) → broadcasts to (3, 4)
+- (3, 1) * (1, 4) → broadcasts to (3, 4)
+
+### Aggregations
+- \`sum()\`, \`mean()\`, \`std()\` - with axis parameter
+- \`argmax()\`, \`argmin()\` - find indices
+
+### Shape Manipulation
+- \`reshape()\`: Change dimensions
+- \`transpose()\`, \`.T\`: Swap axes
+- \`flatten()\`, \`ravel()\`: To 1D
+
+Master these operations to write efficient ML code!
+    `,
+    problems: ['numpy-array-creation', 'numpy-indexing', 'numpy-broadcasting', 'numpy-aggregations', 'numpy-reshape-transpose'],
+  },
   {
     id: 'python-basics',
     title: 'Python Basics for ML',
@@ -33,6 +77,123 @@ Let's practice with hands-on problems!
     `,
     problems: ['numpy-array-sum', 'numpy-matrix-multiply', 'numpy-broadcast-add'],
   },
+  {
+    id: 'einsum',
+    title: 'Einstein Summation (Einsum)',
+    description: 'Master einsum for elegant tensor operations.',
+    icon: '∑',
+    introduction: `
+# Einstein Summation (Einsum)
+
+Einsum is a powerful notation for expressing tensor operations concisely.
+
+## Why Einsum?
+- Express complex operations in one line
+- Often faster than chained operations
+- Essential for attention mechanisms
+
+## Syntax
+\`\`\`python
+np.einsum('subscripts', operands)
+\`\`\`
+
+## Common Patterns
+
+### Basic Operations
+| Einsum | Operation |
+|--------|-----------|
+| \`'ij->'\` | Sum all elements |
+| \`'ij->i'\` | Sum along axis 1 (row sums) |
+| \`'ij->j'\` | Sum along axis 0 (column sums) |
+| \`'ij->ji'\` | Transpose |
+| \`'ii->i'\` | Extract diagonal |
+
+### Matrix Operations
+| Einsum | Operation |
+|--------|-----------|
+| \`'ik,kj->ij'\` | Matrix multiplication |
+| \`'ij,ij->ij'\` | Element-wise product |
+| \`'ij,ij->'\` | Frobenius inner product |
+| \`'i,j->ij'\` | Outer product |
+
+### Batch Operations
+| Einsum | Operation |
+|--------|-----------|
+| \`'bij,bjk->bik'\` | Batch matrix multiply |
+| \`'bqd,bkd->bqk'\` | Attention scores |
+
+## Key Insight
+Letters that appear on both sides are kept.
+Letters that disappear are summed over (contracted).
+
+Master einsum to write clean, efficient deep learning code!
+    `,
+    problems: ['einsum-basics', 'einsum-matrix-ops', 'einsum-batch-ops', 'einsum-advanced', 'einsum-vs-matmul'],
+  },
+  {
+    id: 'pytorch-basics',
+    title: 'PyTorch Basics',
+    description: 'Learn PyTorch patterns implemented in NumPy.',
+    icon: '🔥',
+    introduction: `
+# PyTorch Basics
+
+Learn PyTorch patterns and concepts. Since Pyodide doesn't support PyTorch, we implement these concepts in NumPy.
+
+## Tensor Operations
+
+### Creation
+\`\`\`python
+# PyTorch           # NumPy equivalent
+torch.tensor()      np.array()
+torch.zeros()       np.zeros()
+torch.randn()       np.random.randn()
+\`\`\`
+
+### Operations
+\`\`\`python
+# PyTorch           # NumPy equivalent
+x + y               x + y
+x @ y               x @ y
+x.sum(dim=1)        x.sum(axis=1)
+x.view(2, -1)       x.reshape(2, -1)
+\`\`\`
+
+## Autograd Concepts
+
+PyTorch tracks operations for automatic differentiation:
+\`\`\`python
+x = torch.tensor([2.0], requires_grad=True)
+y = x ** 2
+y.backward()  # dy/dx = 2x = 4
+\`\`\`
+
+We implement this manually to understand the math.
+
+## Module Pattern
+\`\`\`python
+class Linear(nn.Module):
+    def __init__(self, in_features, out_features):
+        self.weight = Parameter(...)
+        self.bias = Parameter(...)
+
+    def forward(self, x):
+        return x @ self.weight + self.bias
+\`\`\`
+
+## Loss Functions
+- CrossEntropyLoss: Classification
+- MSELoss: Regression
+- BCELoss: Binary classification
+
+Learn these patterns to understand PyTorch!
+    `,
+    problems: ['tensor-creation', 'tensor-operations', 'autograd-concepts', 'nn-modules', 'loss-functions'],
+  },
+
+  // ==========================================
+  // PART 2: DATA HANDLING
+  // ==========================================
   {
     id: 'data-preprocessing',
     title: 'Data Preprocessing',
@@ -69,6 +230,10 @@ Let's practice these essential skills!
     `,
     problems: ['normalize-features', 'handle-missing-data', 'one-hot-encode'],
   },
+
+  // ==========================================
+  // PART 3: CLASSICAL MACHINE LEARNING
+  // ==========================================
   {
     id: 'supervised-learning',
     title: 'Supervised Learning',
@@ -148,6 +313,81 @@ Unsupervised learning finds patterns in unlabeled data.
 Let's implement these algorithms!
     `,
     problems: ['kmeans-clustering', 'pca-implementation'],
+  },
+  {
+    id: 'model-evaluation',
+    title: 'Model Evaluation',
+    description: 'Learn metrics and techniques to evaluate ML models properly.',
+    icon: '📈',
+    introduction: `
+# Model Evaluation
+
+Building a model is only half the job. You need to evaluate it properly.
+
+## Key Concepts
+
+### Classification Metrics
+- **Accuracy**: Correct / Total (can be misleading!)
+- **Precision**: TP / (TP + FP) - "Of positive predictions, how many correct?"
+- **Recall**: TP / (TP + FN) - "Of actual positives, how many found?"
+- **F1 Score**: Harmonic mean of precision and recall
+
+### Regression Metrics
+- **MSE**: Mean Squared Error
+- **RMSE**: Root MSE (same units as target)
+- **MAE**: Mean Absolute Error (robust to outliers)
+- **R²**: Proportion of variance explained
+
+### Cross-Validation
+- **Why**: Single train/test split is unreliable
+- **K-Fold**: Split data into K parts, rotate test set
+- **Stratified**: Maintain class distribution in folds
+
+### Interview Essentials
+- Know when to use each metric
+- Implement cross-validation from scratch
+- Discuss precision-recall trade-offs
+
+Let's practice evaluation!
+    `,
+    problems: ['precision-recall-f1', 'cross-validation', 'confusion-matrix'],
+  },
+
+  // ==========================================
+  // PART 4: DEEP LEARNING
+  // ==========================================
+  {
+    id: 'deep-learning',
+    title: 'Deep Learning Basics',
+    description: 'Activation functions and fundamental building blocks.',
+    icon: '⚡',
+    introduction: `
+# Deep Learning Basics
+
+Core building blocks that appear in every neural network.
+
+## Key Concepts
+
+### Activation Functions
+- **ReLU**: max(0, x) - Most common, avoids vanishing gradient
+- **Sigmoid**: 1/(1+e^-x) - Output in [0,1], used for binary classification
+- **Softmax**: Converts logits to probabilities that sum to 1
+- **Tanh**: Output in [-1, 1], zero-centered
+
+### When to Use Each
+- **Hidden layers**: ReLU (or variants like LeakyReLU)
+- **Binary output**: Sigmoid
+- **Multi-class output**: Softmax
+- **RNNs**: Tanh (historically)
+
+### Dense Layers
+- **Forward pass**: output = activation(W @ x + b)
+- **Parameters**: Weights W and biases b
+- **Computation**: Matrix multiplication + bias + activation
+
+Let's implement these fundamentals!
+    `,
+    problems: ['perceptron', 'neural-network-forward', 'backpropagation'],
   },
   {
     id: 'neural-networks',
@@ -329,231 +569,10 @@ Let's implement generative models!
     `,
     problems: ['kl-divergence', 'vae-reparameterization', 'vae-loss', 'diffusion-noise-schedule', 'diffusion-forward'],
   },
-  {
-    id: 'model-evaluation',
-    title: 'Model Evaluation',
-    description: 'Learn metrics and techniques to evaluate ML models properly.',
-    icon: '📈',
-    introduction: `
-# Model Evaluation
 
-Building a model is only half the job. You need to evaluate it properly.
-
-## Key Concepts
-
-### Classification Metrics
-- **Accuracy**: Correct / Total (can be misleading!)
-- **Precision**: TP / (TP + FP) - "Of positive predictions, how many correct?"
-- **Recall**: TP / (TP + FN) - "Of actual positives, how many found?"
-- **F1 Score**: Harmonic mean of precision and recall
-
-### Regression Metrics
-- **MSE**: Mean Squared Error
-- **RMSE**: Root MSE (same units as target)
-- **MAE**: Mean Absolute Error (robust to outliers)
-- **R²**: Proportion of variance explained
-
-### Cross-Validation
-- **Why**: Single train/test split is unreliable
-- **K-Fold**: Split data into K parts, rotate test set
-- **Stratified**: Maintain class distribution in folds
-
-### Interview Essentials
-- Know when to use each metric
-- Implement cross-validation from scratch
-- Discuss precision-recall trade-offs
-
-Let's practice evaluation!
-    `,
-    problems: ['precision-recall-f1', 'cross-validation', 'confusion-matrix'],
-  },
-  {
-    id: 'deep-learning',
-    title: 'Deep Learning Basics',
-    description: 'Activation functions and fundamental building blocks.',
-    icon: '⚡',
-    introduction: `
-# Deep Learning Basics
-
-Core building blocks that appear in every neural network.
-
-## Key Concepts
-
-### Activation Functions
-- **ReLU**: max(0, x) - Most common, avoids vanishing gradient
-- **Sigmoid**: 1/(1+e^-x) - Output in [0,1], used for binary classification
-- **Softmax**: Converts logits to probabilities that sum to 1
-- **Tanh**: Output in [-1, 1], zero-centered
-
-### When to Use Each
-- **Hidden layers**: ReLU (or variants like LeakyReLU)
-- **Binary output**: Sigmoid
-- **Multi-class output**: Softmax
-- **RNNs**: Tanh (historically)
-
-### Dense Layers
-- **Forward pass**: output = activation(W @ x + b)
-- **Parameters**: Weights W and biases b
-- **Computation**: Matrix multiplication + bias + activation
-
-Let's implement these fundamentals!
-    `,
-    problems: ['perceptron', 'neural-network-forward', 'backpropagation'],
-  },
-  {
-    id: 'numpy-fundamentals',
-    title: 'NumPy Fundamentals',
-    description: 'Master NumPy array operations essential for ML development.',
-    icon: '🔢',
-    introduction: `
-# NumPy Fundamentals
-
-NumPy is the backbone of scientific computing in Python. Every ML library builds on it.
-
-## Key Concepts
-
-### Array Creation
-- \`np.array()\`: Create from lists
-- \`np.zeros()\`, \`np.ones()\`: Initialize with values
-- \`np.arange()\`, \`np.linspace()\`: Numeric ranges
-- \`np.eye()\`: Identity matrix
-
-### Indexing & Slicing
-- Basic: \`arr[0]\`, \`arr[1:5]\`
-- Advanced: \`arr[[0, 2, 4]]\`, \`arr[arr > 0]\`
-- Multi-dimensional: \`arr[1, :]\`, \`arr[:, 2:4]\`
-
-### Broadcasting
-Arrays of different shapes can be combined:
-- (3, 4) + (4,) → broadcasts to (3, 4)
-- (3, 1) * (1, 4) → broadcasts to (3, 4)
-
-### Aggregations
-- \`sum()\`, \`mean()\`, \`std()\` - with axis parameter
-- \`argmax()\`, \`argmin()\` - find indices
-
-### Shape Manipulation
-- \`reshape()\`: Change dimensions
-- \`transpose()\`, \`.T\`: Swap axes
-- \`flatten()\`, \`ravel()\`: To 1D
-
-Master these operations to write efficient ML code!
-    `,
-    problems: ['numpy-array-creation', 'numpy-indexing', 'numpy-broadcasting', 'numpy-aggregations', 'numpy-reshape-transpose'],
-  },
-  {
-    id: 'einsum',
-    title: 'Einstein Summation (Einsum)',
-    description: 'Master einsum for elegant tensor operations.',
-    icon: '∑',
-    introduction: `
-# Einstein Summation (Einsum)
-
-Einsum is a powerful notation for expressing tensor operations concisely.
-
-## Why Einsum?
-- Express complex operations in one line
-- Often faster than chained operations
-- Essential for attention mechanisms
-
-## Syntax
-\`\`\`python
-np.einsum('subscripts', operands)
-\`\`\`
-
-## Common Patterns
-
-### Basic Operations
-| Einsum | Operation |
-|--------|-----------|
-| \`'ij->'\` | Sum all elements |
-| \`'ij->i'\` | Sum along axis 1 (row sums) |
-| \`'ij->j'\` | Sum along axis 0 (column sums) |
-| \`'ij->ji'\` | Transpose |
-| \`'ii->i'\` | Extract diagonal |
-
-### Matrix Operations
-| Einsum | Operation |
-|--------|-----------|
-| \`'ik,kj->ij'\` | Matrix multiplication |
-| \`'ij,ij->ij'\` | Element-wise product |
-| \`'ij,ij->'\` | Frobenius inner product |
-| \`'i,j->ij'\` | Outer product |
-
-### Batch Operations
-| Einsum | Operation |
-|--------|-----------|
-| \`'bij,bjk->bik'\` | Batch matrix multiply |
-| \`'bqd,bkd->bqk'\` | Attention scores |
-
-## Key Insight
-Letters that appear on both sides are kept.
-Letters that disappear are summed over (contracted).
-
-Master einsum to write clean, efficient deep learning code!
-    `,
-    problems: ['einsum-basics', 'einsum-matrix-ops', 'einsum-batch-ops', 'einsum-advanced', 'einsum-vs-matmul'],
-  },
-  {
-    id: 'pytorch-basics',
-    title: 'PyTorch Basics',
-    description: 'Learn PyTorch patterns implemented in NumPy.',
-    icon: '🔥',
-    introduction: `
-# PyTorch Basics
-
-Learn PyTorch patterns and concepts. Since Pyodide doesn't support PyTorch, we implement these concepts in NumPy.
-
-## Tensor Operations
-
-### Creation
-\`\`\`python
-# PyTorch           # NumPy equivalent
-torch.tensor()      np.array()
-torch.zeros()       np.zeros()
-torch.randn()       np.random.randn()
-\`\`\`
-
-### Operations
-\`\`\`python
-# PyTorch           # NumPy equivalent
-x + y               x + y
-x @ y               x @ y
-x.sum(dim=1)        x.sum(axis=1)
-x.view(2, -1)       x.reshape(2, -1)
-\`\`\`
-
-## Autograd Concepts
-
-PyTorch tracks operations for automatic differentiation:
-\`\`\`python
-x = torch.tensor([2.0], requires_grad=True)
-y = x ** 2
-y.backward()  # dy/dx = 2x = 4
-\`\`\`
-
-We implement this manually to understand the math.
-
-## Module Pattern
-\`\`\`python
-class Linear(nn.Module):
-    def __init__(self, in_features, out_features):
-        self.weight = Parameter(...)
-        self.bias = Parameter(...)
-
-    def forward(self, x):
-        return x @ self.weight + self.bias
-\`\`\`
-
-## Loss Functions
-- CrossEntropyLoss: Classification
-- MSELoss: Regression
-- BCELoss: Binary classification
-
-Learn these patterns to understand PyTorch!
-    `,
-    problems: ['tensor-creation', 'tensor-operations', 'autograd-concepts', 'nn-modules', 'loss-functions'],
-  },
+  // ==========================================
+  // PART 5: CAPSTONE - END-TO-END IMPLEMENTATIONS
+  // ==========================================
   {
     id: 'e2e-implementations',
     title: 'End-to-End Implementations',
