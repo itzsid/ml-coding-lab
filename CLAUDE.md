@@ -11,6 +11,7 @@ This is a LeetCode/HelloInterview-style web application for learning ML by build
 - Run tests and see pass/fail results
 - Track progress across sections
 - Use a Python scratchpad to experiment with code (NumPy pre-loaded)
+- Submit feedback via in-app form (sends email via Formspree)
 
 **Live site:** https://itzsid.github.io/ml-coding-lab/
 **Repository:** https://github.com/itzsid/ml-coding-lab
@@ -47,8 +48,10 @@ src/
 │   │   └── Hints.tsx               # Progressive hints + solution
 │   ├── TestRunner/
 │   │   └── TestResults.tsx  # Pass/fail display
-│   └── Progress/
-│       └── ProgressBar.tsx  # Progress indicator
+│   ├── Progress/
+│   │   └── ProgressBar.tsx  # Progress indicator
+│   └── FeedbackModal/
+│       └── FeedbackModal.tsx  # Feedback form modal (Formspree)
 ├── context/
 │   └── ProgressContext.tsx  # Global progress state (localStorage)
 ├── data/
