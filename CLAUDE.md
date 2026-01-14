@@ -51,19 +51,23 @@ src/
 ├── context/
 │   └── ProgressContext.tsx  # Global progress state (localStorage)
 ├── data/
-│   ├── sections.ts          # Section definitions with intros
-│   └── problems/            # Problem definitions by section
+│   ├── sections.ts          # Section definitions with intros (14 sections)
+│   └── problems/            # Problem definitions by section (~55 problems)
 │       ├── index.ts         # Exports all problems
+│       ├── numpy-fundamentals.ts   # Part 1: Foundations
 │       ├── python-basics.ts
-│       ├── data-preprocessing.ts
-│       ├── supervised-learning.ts
+│       ├── einsum.ts
+│       ├── pytorch-basics.ts
+│       ├── data-preprocessing.ts   # Part 2: Data
+│       ├── supervised-learning.ts  # Part 3: Classical ML
 │       ├── unsupervised-learning.ts
-│       ├── deep-learning.ts
 │       ├── model-evaluation.ts
+│       ├── deep-learning.ts        # Part 4: Deep Learning
 │       ├── neural-networks.ts
 │       ├── cnn.ts
 │       ├── transformers.ts
-│       └── generative-models.ts
+│       ├── generative-models.ts
+│       └── e2e-implementations.ts  # Part 5: Capstone
 ├── hooks/
 │   ├── usePyodide.ts    # Python execution hook
 │   └── useProgress.ts   # Progress tracking (if needed separately)
@@ -79,8 +83,8 @@ src/
 ## Key Files to Understand
 
 ### Data Layer
-- **`src/data/sections.ts`** - Defines the 10 learning sections with titles, descriptions, introductions (markdown), and problem IDs
-- **`src/data/problems/*.ts`** - Problem definitions with descriptions, starter code, test cases, hints, solutions (~35 problems total)
+- **`src/data/sections.ts`** - Defines the 14 learning sections organized in 5 parts (Foundations → Data → Classical ML → Deep Learning → Capstone)
+- **`src/data/problems/*.ts`** - Problem definitions with descriptions, starter code, test cases, hints, solutions (~55 problems total)
 
 ### State Management
 - **`src/context/ProgressContext.tsx`** - React Context for tracking problem completion, saved code, stored in localStorage under key `ml-interview-progress`
@@ -93,18 +97,41 @@ src/
 
 ## Current Sections & Problems
 
+Sections are organized in a logical learning progression:
+
+### Part 1: Foundations
 | Section | File | Problems |
 |---------|------|----------|
+| **NumPy Fundamentals** | `numpy-fundamentals.ts` | Array Creation, Indexing, Broadcasting, Aggregations, Reshape/Transpose |
 | **Python Basics for ML** | `python-basics.ts` | Array Sum, Matrix Multiply, Broadcast Add |
+| **Einstein Summation** | `einsum.ts` | Basics, Matrix Ops, Batch Ops, Advanced (Multi-Head), Equivalences |
+| **PyTorch Basics** | `pytorch-basics.ts` | Tensor Creation, Operations, Autograd Concepts, NN Modules, Loss Functions |
+
+### Part 2: Data
+| Section | File | Problems |
+|---------|------|----------|
 | **Data Preprocessing** | `data-preprocessing.ts` | Normalize Features, Handle Missing Data, One-Hot Encode |
-| **Supervised Learning** | `supervised-learning.ts` | Linear Regression (GD), Sigmoid, Gini Impurity, Logistic Regression (full), Binary Cross-Entropy |
+
+### Part 3: Classical ML
+| Section | File | Problems |
+|---------|------|----------|
+| **Supervised Learning** | `supervised-learning.ts` | Linear Regression (GD), Logistic Regression, Logistic (Full), Binary Cross-Entropy, Decision Tree Split |
 | **Unsupervised Learning** | `unsupervised-learning.ts` | K-Means Clustering, PCA Implementation |
-| **Deep Learning Basics** | `deep-learning.ts` | Perceptron, Neural Network Forward, Backpropagation |
 | **Model Evaluation** | `model-evaluation.ts` | Precision/Recall/F1, Cross-Validation, Confusion Matrix |
-| **Neural Networks** | `neural-networks.ts` | Cross-Entropy Loss, MLP Forward Pass, Backprop Gradients, Weight Init (Xavier/He), Batch Normalization, Dropout |
+
+### Part 4: Deep Learning
+| Section | File | Problems |
+|---------|------|----------|
+| **Deep Learning Basics** | `deep-learning.ts` | Perceptron, Neural Network Forward, Backpropagation |
+| **Neural Networks** | `neural-networks.ts` | Cross-Entropy Loss, MLP Forward, Backprop Gradients, Weight Init, Batch Norm, Dropout |
 | **CNNs** | `cnn.ts` | Conv Output Size, 2D Convolution, Max Pooling, Flatten Layer |
-| **Transformers** | `transformers.ts` | Scaled Dot-Product Attention, Multi-Head Attention, Positional Encoding, Layer Normalization, Causal Mask |
-| **Generative Models** | `generative-models.ts` | KL Divergence, VAE Reparameterization, VAE Loss, Diffusion Noise Schedule, Diffusion Forward Process |
+| **Transformers** | `transformers.ts` | Scaled Dot-Product Attention, Multi-Head Attention, Positional Encoding, Layer Norm, Causal Mask |
+| **Generative Models** | `generative-models.ts` | KL Divergence, VAE Reparameterization, VAE Loss, Diffusion Noise Schedule, Diffusion Forward |
+
+### Part 5: Capstone
+| Section | File | Problems |
+|---------|------|----------|
+| **E2E Implementations** | `e2e-implementations.ts` | 2-Layer MLP (full backprop), Transformer Encoder, VAE, Diffusion Model, CNN |
 
 ## Commands
 
@@ -227,10 +254,11 @@ The problem content was developed using these resources:
 - Add search functionality
 - Add code submission history
 - Add discussion/comments section
-- Add dark/light theme toggle
+- Add dark/light theme toggle (currently light theme only)
 - Add RNN/LSTM section
 - Add reinforcement learning basics
 - Add more optimization algorithms (SGD variants, Adam details)
+- Add GAN implementation section
 
 ## Testing
 
