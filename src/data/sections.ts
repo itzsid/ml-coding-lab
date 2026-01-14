@@ -400,4 +400,216 @@ Let's implement these fundamentals!
     `,
     problems: ['perceptron', 'neural-network-forward', 'backpropagation'],
   },
+  {
+    id: 'numpy-fundamentals',
+    title: 'NumPy Fundamentals',
+    description: 'Master NumPy array operations essential for ML development.',
+    icon: '🔢',
+    introduction: `
+# NumPy Fundamentals
+
+NumPy is the backbone of scientific computing in Python. Every ML library builds on it.
+
+## Key Concepts
+
+### Array Creation
+- \`np.array()\`: Create from lists
+- \`np.zeros()\`, \`np.ones()\`: Initialize with values
+- \`np.arange()\`, \`np.linspace()\`: Numeric ranges
+- \`np.eye()\`: Identity matrix
+
+### Indexing & Slicing
+- Basic: \`arr[0]\`, \`arr[1:5]\`
+- Advanced: \`arr[[0, 2, 4]]\`, \`arr[arr > 0]\`
+- Multi-dimensional: \`arr[1, :]\`, \`arr[:, 2:4]\`
+
+### Broadcasting
+Arrays of different shapes can be combined:
+- (3, 4) + (4,) → broadcasts to (3, 4)
+- (3, 1) * (1, 4) → broadcasts to (3, 4)
+
+### Aggregations
+- \`sum()\`, \`mean()\`, \`std()\` - with axis parameter
+- \`argmax()\`, \`argmin()\` - find indices
+
+### Shape Manipulation
+- \`reshape()\`: Change dimensions
+- \`transpose()\`, \`.T\`: Swap axes
+- \`flatten()\`, \`ravel()\`: To 1D
+
+Master these operations to write efficient ML code!
+    `,
+    problems: ['numpy-array-creation', 'numpy-indexing', 'numpy-broadcasting', 'numpy-aggregations', 'numpy-reshape-transpose'],
+  },
+  {
+    id: 'einsum',
+    title: 'Einstein Summation (Einsum)',
+    description: 'Master einsum for elegant tensor operations.',
+    icon: '∑',
+    introduction: `
+# Einstein Summation (Einsum)
+
+Einsum is a powerful notation for expressing tensor operations concisely.
+
+## Why Einsum?
+- Express complex operations in one line
+- Often faster than chained operations
+- Essential for attention mechanisms
+
+## Syntax
+\`\`\`python
+np.einsum('subscripts', operands)
+\`\`\`
+
+## Common Patterns
+
+### Basic Operations
+| Einsum | Operation |
+|--------|-----------|
+| \`'ij->'\` | Sum all elements |
+| \`'ij->i'\` | Sum along axis 1 (row sums) |
+| \`'ij->j'\` | Sum along axis 0 (column sums) |
+| \`'ij->ji'\` | Transpose |
+| \`'ii->i'\` | Extract diagonal |
+
+### Matrix Operations
+| Einsum | Operation |
+|--------|-----------|
+| \`'ik,kj->ij'\` | Matrix multiplication |
+| \`'ij,ij->ij'\` | Element-wise product |
+| \`'ij,ij->'\` | Frobenius inner product |
+| \`'i,j->ij'\` | Outer product |
+
+### Batch Operations
+| Einsum | Operation |
+|--------|-----------|
+| \`'bij,bjk->bik'\` | Batch matrix multiply |
+| \`'bqd,bkd->bqk'\` | Attention scores |
+
+## Key Insight
+Letters that appear on both sides are kept.
+Letters that disappear are summed over (contracted).
+
+Master einsum to write clean, efficient deep learning code!
+    `,
+    problems: ['einsum-basics', 'einsum-matrix-ops', 'einsum-batch-ops', 'einsum-advanced', 'einsum-vs-matmul'],
+  },
+  {
+    id: 'pytorch-basics',
+    title: 'PyTorch Basics',
+    description: 'Learn PyTorch patterns implemented in NumPy.',
+    icon: '🔥',
+    introduction: `
+# PyTorch Basics
+
+Learn PyTorch patterns and concepts. Since Pyodide doesn't support PyTorch, we implement these concepts in NumPy.
+
+## Tensor Operations
+
+### Creation
+\`\`\`python
+# PyTorch           # NumPy equivalent
+torch.tensor()      np.array()
+torch.zeros()       np.zeros()
+torch.randn()       np.random.randn()
+\`\`\`
+
+### Operations
+\`\`\`python
+# PyTorch           # NumPy equivalent
+x + y               x + y
+x @ y               x @ y
+x.sum(dim=1)        x.sum(axis=1)
+x.view(2, -1)       x.reshape(2, -1)
+\`\`\`
+
+## Autograd Concepts
+
+PyTorch tracks operations for automatic differentiation:
+\`\`\`python
+x = torch.tensor([2.0], requires_grad=True)
+y = x ** 2
+y.backward()  # dy/dx = 2x = 4
+\`\`\`
+
+We implement this manually to understand the math.
+
+## Module Pattern
+\`\`\`python
+class Linear(nn.Module):
+    def __init__(self, in_features, out_features):
+        self.weight = Parameter(...)
+        self.bias = Parameter(...)
+
+    def forward(self, x):
+        return x @ self.weight + self.bias
+\`\`\`
+
+## Loss Functions
+- CrossEntropyLoss: Classification
+- MSELoss: Regression
+- BCELoss: Binary classification
+
+Learn these patterns to understand PyTorch!
+    `,
+    problems: ['tensor-creation', 'tensor-operations', 'autograd-concepts', 'nn-modules', 'loss-functions'],
+  },
+  {
+    id: 'e2e-implementations',
+    title: 'End-to-End Implementations',
+    description: 'Build complete ML models from scratch.',
+    icon: '🏗️',
+    introduction: `
+# End-to-End Implementations
+
+Put everything together to build complete models from scratch.
+
+## Why Build From Scratch?
+
+1. **Deep Understanding**: Know every component
+2. **Interview Preparation**: Common coding questions
+3. **Debugging Skills**: Understand what can go wrong
+4. **Framework Independence**: Adapt to any library
+
+## Models Covered
+
+### 2-Layer MLP with Backprop
+Complete neural network with:
+- Forward pass through hidden layer
+- Backpropagation of gradients
+- Weight updates via gradient descent
+
+### Transformer Encoder
+Full encoder block with:
+- Multi-head self-attention
+- Positional encoding
+- Layer normalization
+- Feed-forward network
+- Residual connections
+
+### Variational Autoencoder (VAE)
+Generative model with:
+- Encoder → latent distribution
+- Reparameterization trick
+- Decoder → reconstruction
+- ELBO loss (reconstruction + KL)
+
+### Diffusion Model
+DDPM-style diffusion with:
+- Noise schedule (β, α, ᾱ)
+- Forward diffusion process
+- Reverse denoising process
+- Training objective
+
+### Convolutional Neural Network
+Image classifier with:
+- Conv2D layers
+- Max pooling
+- Flatten + FC layers
+- Full forward pass
+
+Build these models to truly understand deep learning!
+    `,
+    problems: ['e2e-mlp', 'e2e-transformer', 'e2e-vae', 'e2e-diffusion', 'e2e-cnn'],
+  },
 ];

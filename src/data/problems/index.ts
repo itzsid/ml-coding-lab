@@ -9,6 +9,10 @@ import { neuralNetworkProblems } from './neural-networks';
 import { cnnProblems } from './cnn';
 import { transformerProblems } from './transformers';
 import { generativeModelProblems } from './generative-models';
+import { numpyFundamentalsProblems } from './numpy-fundamentals';
+import { einsumProblems } from './einsum';
+import { pytorchBasicsProblems } from './pytorch-basics';
+import { e2eImplementationProblems } from './e2e-implementations';
 
 export const allProblems: Problem[] = [
   ...pythonBasicsProblems,
@@ -21,6 +25,10 @@ export const allProblems: Problem[] = [
   ...cnnProblems,
   ...transformerProblems,
   ...generativeModelProblems,
+  ...numpyFundamentalsProblems,
+  ...einsumProblems,
+  ...pytorchBasicsProblems,
+  ...e2eImplementationProblems,
 ];
 
 export function getProblemById(id: string): Problem | undefined {
@@ -42,4 +50,8 @@ export {
   cnnProblems,
   transformerProblems,
   generativeModelProblems,
+  numpyFundamentalsProblems,
+  einsumProblems,
+  pytorchBasicsProblems,
+  e2eImplementationProblems,
 };
