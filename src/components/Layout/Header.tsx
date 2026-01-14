@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProgress } from '../../context/ProgressContext';
 import { sections } from '../../data/sections';
+import FeedbackModal from '../FeedbackModal/FeedbackModal';
 
 export default function Header() {
   const { getOverallProgress } = useProgress();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const sectionInfo = sections.map(s => ({
     id: s.id,
@@ -13,6 +16,7 @@ export default function Header() {
   const overallProgress = getOverallProgress(sectionInfo);
 
   return (
+    <>
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -33,15 +37,15 @@ export default function Header() {
               </svg>
               Scratchpad
             </Link>
-            <a
-              href="mailto:itzsid@gmail.com?subject=ML%20Coding%20Lab%20Feedback"
+            <button
+              onClick={() => setIsFeedbackOpen(true)}
               className="px-3 py-1.5 text-gray-500 text-sm font-medium hover:text-gray-700 transition-colors flex items-center gap-1"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               Feedback
-            </a>
+            </button>
             <div className="flex items-center gap-3">
               <span className="text-gray-500 text-sm">Overall Progress</span>
               <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -56,5 +60,8 @@ export default function Header() {
         </div>
       </div>
     </header>
+
+    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+  </>
   );
 }
