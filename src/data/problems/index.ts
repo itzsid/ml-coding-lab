@@ -5,6 +5,10 @@ import { supervisedLearningProblems } from './supervised-learning';
 import { unsupervisedLearningProblems } from './unsupervised-learning';
 import { deepLearningProblems } from './deep-learning';
 import { modelEvaluationProblems } from './model-evaluation';
+import { neuralNetworkProblems } from './neural-networks';
+import { cnnProblems } from './cnn';
+import { transformerProblems } from './transformers';
+import { generativeModelProblems } from './generative-models';
 
 export const allProblems: Problem[] = [
   ...pythonBasicsProblems,
@@ -13,6 +17,10 @@ export const allProblems: Problem[] = [
   ...unsupervisedLearningProblems,
   ...deepLearningProblems,
   ...modelEvaluationProblems,
+  ...neuralNetworkProblems,
+  ...cnnProblems,
+  ...transformerProblems,
+  ...generativeModelProblems,
 ];
 
 export function getProblemById(id: string): Problem | undefined {
@@ -30,4 +38,8 @@ export {
   unsupervisedLearningProblems,
   deepLearningProblems,
   modelEvaluationProblems,
+  neuralNetworkProblems,
+  cnnProblems,
+  transformerProblems,
+  generativeModelProblems,
 };

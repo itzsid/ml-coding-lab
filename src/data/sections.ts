@@ -91,6 +91,7 @@ Supervised learning is when you train a model on labeled data to make prediction
 - **Goal**: Binary classification
 - **Sigmoid function**: Maps outputs to [0, 1] probabilities
 - **Loss**: Binary cross-entropy
+- **Decision boundary**: Linear separation of classes
 
 ### Decision Trees
 - **Concept**: Recursive binary splits based on features
@@ -105,7 +106,7 @@ Interviewers often ask you to:
 
 Let's build these algorithms!
     `,
-    problems: ['linear-regression-gd', 'logistic-regression', 'decision-tree-split'],
+    problems: ['linear-regression-gd', 'logistic-regression', 'logistic-regression-full', 'binary-cross-entropy', 'decision-tree-split'],
   },
   {
     id: 'unsupervised-learning',
@@ -149,40 +150,184 @@ Let's implement these algorithms!
     problems: ['kmeans-clustering', 'pca-implementation'],
   },
   {
-    id: 'deep-learning',
-    title: 'Deep Learning Basics',
-    description: 'Build neural networks from scratch to understand the fundamentals.',
+    id: 'neural-networks',
+    title: 'Neural Networks',
+    description: 'Build neural networks from scratch with forward and backward passes.',
     icon: '🧠',
     introduction: `
-# Deep Learning Basics
+# Neural Networks
 
-Neural networks are the foundation of modern AI. Understanding how they work from scratch is essential.
+Neural networks are the foundation of deep learning. Understanding the math behind them is essential for ML interviews.
 
 ## Key Concepts
 
-### Perceptron
-- **Structure**: Single layer of weights + bias
-- **Activation**: Step function for binary output
-- **Learning**: Update weights based on errors
-
-### Multi-Layer Networks
-- **Forward propagation**: Input → Hidden → Output
-- **Activation functions**: ReLU, Sigmoid, Tanh
-- **Why layers**: Learn hierarchical features
+### Multi-Layer Perceptron (MLP)
+- **Architecture**: Input → Hidden layers → Output
+- **Forward pass**: Compute activations layer by layer
+- **Activation functions**: ReLU, Sigmoid, Tanh, Softmax
 
 ### Backpropagation
 - **Chain rule**: Compute gradients layer by layer
-- **Weight updates**: gradient descent on all parameters
-- **Key insight**: Errors propagate backwards
+- **Weight updates**: Gradient descent on all parameters
+- **Key insight**: Errors propagate backwards through the network
 
-### Common Interview Questions
-- Implement forward pass for a 2-layer network
-- Derive backpropagation equations
+### Training Techniques
+- **Weight Initialization**: Xavier, He initialization
+- **Batch Normalization**: Normalize activations for stable training
+- **Dropout**: Randomly drop neurons to prevent overfitting
+
+### Loss Functions
+- **Cross-entropy**: For classification
+- **MSE**: For regression
+
+### Common Interview Topics
+- Implement forward/backward pass from scratch
 - Explain vanishing/exploding gradients
+- Discuss initialization strategies
+- Implement regularization techniques
 
 Let's build neural networks from scratch!
     `,
-    problems: ['perceptron', 'neural-network-forward', 'backpropagation'],
+    problems: ['cross-entropy-loss', 'mlp-forward', 'backprop-gradients', 'weight-init', 'batch-norm', 'dropout'],
+  },
+  {
+    id: 'cnn',
+    title: 'Convolutional Neural Networks',
+    description: 'Understand convolutions, pooling, and CNN architectures.',
+    icon: '🖼️',
+    introduction: `
+# Convolutional Neural Networks (CNNs)
+
+CNNs are the backbone of computer vision. They learn hierarchical features from images.
+
+## Key Concepts
+
+### Convolution Operation
+- **Kernel/Filter**: Small matrix that slides over input
+- **Feature maps**: Output of applying filters
+- **Parameters**: Stride, padding, kernel size
+
+### Pooling Layers
+- **Max pooling**: Take maximum in each region
+- **Average pooling**: Take average in each region
+- **Purpose**: Reduce spatial dimensions, add translation invariance
+
+### CNN Architecture Components
+1. **Convolutional layers**: Extract features
+2. **Pooling layers**: Reduce dimensions
+3. **Flatten**: Convert 2D to 1D
+4. **Fully connected**: Classification
+
+### Output Size Formula
+\`\`\`
+output = (input - kernel + 2*padding) / stride + 1
+\`\`\`
+
+### Classic Architectures
+- **LeNet**: First successful CNN
+- **AlexNet**: Deep CNNs for ImageNet
+- **VGG**: Very deep, small kernels
+- **ResNet**: Skip connections
+
+Let's implement CNN operations!
+    `,
+    problems: ['conv-output-size', 'conv2d-forward', 'max-pool', 'flatten-layer'],
+  },
+  {
+    id: 'transformers',
+    title: 'Attention & Transformers',
+    description: 'Master attention mechanisms and transformer architecture.',
+    icon: '🤖',
+    introduction: `
+# Attention and Transformers
+
+Transformers have revolutionized NLP and are now used in vision, speech, and more.
+
+## Key Concepts
+
+### Self-Attention
+- **Query, Key, Value**: Three projections of input
+- **Attention scores**: Q @ K.T / sqrt(d_k)
+- **Output**: Weighted sum of values
+
+### Scaled Dot-Product Attention
+\`\`\`
+Attention(Q, K, V) = softmax(Q @ K.T / sqrt(d_k)) @ V
+\`\`\`
+
+### Multi-Head Attention
+- **Multiple heads**: Parallel attention with different projections
+- **Concatenate**: Combine all head outputs
+- **Project**: Linear transformation back to model dimension
+
+### Transformer Components
+- **Positional Encoding**: Inject position information
+- **Layer Normalization**: Normalize across features
+- **Feed-Forward Network**: MLP after attention
+- **Residual Connections**: Add input to output
+
+### Causal Masking
+- **Purpose**: Prevent attending to future tokens
+- **Implementation**: Add -inf to upper triangle before softmax
+
+### Interview Essentials
+- Implement scaled dot-product attention
+- Explain why we scale by sqrt(d_k)
+- Multi-head attention benefits
+- Positional encoding purpose
+
+Let's build transformers from scratch!
+    `,
+    problems: ['scaled-dot-product-attention', 'multi-head-attention', 'positional-encoding', 'layer-norm', 'causal-mask'],
+  },
+  {
+    id: 'generative-models',
+    title: 'Generative Models',
+    description: 'Learn VAEs, diffusion models, and generative AI fundamentals.',
+    icon: '🎨',
+    introduction: `
+# Generative Models
+
+Generative models learn to create new data similar to the training distribution.
+
+## Key Concepts
+
+### Variational Autoencoders (VAEs)
+- **Encoder**: Maps input to latent distribution (μ, σ)
+- **Decoder**: Reconstructs input from latent sample
+- **Reparameterization trick**: Enable backprop through sampling
+- **Loss**: Reconstruction + KL divergence
+
+### VAE Loss (ELBO)
+\`\`\`
+L = Reconstruction Loss + KL Divergence
+L = ||x - x_reconstructed||² + KL(q(z|x) || p(z))
+\`\`\`
+
+### Diffusion Models
+- **Forward process**: Gradually add noise to data
+- **Reverse process**: Learn to denoise
+- **Noise schedule**: β_t controls noise at each step
+
+### Key Formulas
+\`\`\`
+x_t = sqrt(α_bar_t) * x_0 + sqrt(1 - α_bar_t) * ε
+\`\`\`
+
+### KL Divergence
+- Measures difference between distributions
+- KL(P || Q) ≥ 0, equals 0 iff P = Q
+- Not symmetric
+
+### Interview Topics
+- Explain reparameterization trick
+- VAE loss components
+- Diffusion forward/reverse process
+- Compare GANs vs VAEs vs Diffusion
+
+Let's implement generative models!
+    `,
+    problems: ['kl-divergence', 'vae-reparameterization', 'vae-loss', 'diffusion-noise-schedule', 'diffusion-forward'],
   },
   {
     id: 'model-evaluation',
@@ -221,5 +366,38 @@ Building a model is only half the job. You need to evaluate it properly.
 Let's practice evaluation!
     `,
     problems: ['precision-recall-f1', 'cross-validation', 'confusion-matrix'],
+  },
+  {
+    id: 'deep-learning',
+    title: 'Deep Learning Basics',
+    description: 'Activation functions and fundamental building blocks.',
+    icon: '⚡',
+    introduction: `
+# Deep Learning Basics
+
+Core building blocks that appear in every neural network.
+
+## Key Concepts
+
+### Activation Functions
+- **ReLU**: max(0, x) - Most common, avoids vanishing gradient
+- **Sigmoid**: 1/(1+e^-x) - Output in [0,1], used for binary classification
+- **Softmax**: Converts logits to probabilities that sum to 1
+- **Tanh**: Output in [-1, 1], zero-centered
+
+### When to Use Each
+- **Hidden layers**: ReLU (or variants like LeakyReLU)
+- **Binary output**: Sigmoid
+- **Multi-class output**: Softmax
+- **RNNs**: Tanh (historically)
+
+### Dense Layers
+- **Forward pass**: output = activation(W @ x + b)
+- **Parameters**: Weights W and biases b
+- **Computation**: Matrix multiplication + bias + activation
+
+Let's implement these fundamentals!
+    `,
+    problems: ['perceptron', 'neural-network-forward', 'backpropagation'],
   },
 ];

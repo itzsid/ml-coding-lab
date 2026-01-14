@@ -306,4 +306,198 @@ def gini_impurity(labels: np.ndarray) -> float:
     return 1 - np.sum(probabilities ** 2)
 `,
   },
+  {
+    id: 'logistic-regression-full',
+    title: 'Logistic Regression with Gradient Descent',
+    section: 'supervised-learning',
+    difficulty: 'medium',
+    description: `
+## Logistic Regression with Gradient Descent
+
+Implement binary logistic regression from scratch.
+
+### Model
+\`\`\`
+z = X @ w + b
+y_pred = sigmoid(z) = 1 / (1 + exp(-z))
+\`\`\`
+
+### Loss (Binary Cross-Entropy)
+\`\`\`
+L = -1/m * sum(y * log(y_pred) + (1-y) * log(1-y_pred))
+\`\`\`
+
+### Gradients
+\`\`\`
+dw = 1/m * X.T @ (y_pred - y)
+db = 1/m * sum(y_pred - y)
+\`\`\`
+    `,
+    examples: [
+      {
+        input: 'X (100, 2), y binary labels, 1000 iterations',
+        output: 'Trained weights and bias',
+        explanation: 'Learns decision boundary separating classes',
+      },
+    ],
+    starterCode: `import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def logistic_regression(X, y, learning_rate=0.1, iterations=1000):
+    """
+    Train logistic regression using gradient descent.
+
+    Args:
+        X: Features (m samples, n features)
+        y: Binary labels (m,)
+        learning_rate: Step size
+        iterations: Number of iterations
+
+    Returns:
+        w: Learned weights (n,)
+        b: Learned bias (scalar)
+    """
+    m, n = X.shape
+    w = np.zeros(n)
+    b = 0.0
+
+    # Your code here
+    pass
+
+    return np.round(w, 4), round(b, 4)
+`,
+    testCases: [
+      {
+        id: '1',
+        description: 'Simple separable data',
+        input: '(np.array([[0, 0], [0, 1], [1, 0], [1, 1]]), np.array([0, 0, 0, 1]), 0.5, 1000)',
+        expected: 'converged',
+        hidden: false,
+      },
+      {
+        id: '2',
+        description: 'Predictions reasonable',
+        input: 'prediction_test',
+        expected: 'True',
+        hidden: true,
+      },
+    ],
+    hints: [
+      'Forward: z = X @ w + b, then y_pred = sigmoid(z)',
+      'Gradients: dw = (1/m) * X.T @ (y_pred - y)',
+      'Update: w = w - lr * dw, b = b - lr * db',
+    ],
+    solution: `import numpy as np
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def logistic_regression(X, y, learning_rate=0.1, iterations=1000):
+    m, n = X.shape
+    w = np.zeros(n)
+    b = 0.0
+
+    for _ in range(iterations):
+        # Forward pass
+        z = X @ w + b
+        y_pred = sigmoid(z)
+
+        # Compute gradients
+        dw = (1/m) * X.T @ (y_pred - y)
+        db = (1/m) * np.sum(y_pred - y)
+
+        # Update parameters
+        w = w - learning_rate * dw
+        b = b - learning_rate * db
+
+    return np.round(w, 4), round(b, 4)
+`,
+  },
+  {
+    id: 'binary-cross-entropy',
+    title: 'Binary Cross-Entropy Loss',
+    section: 'supervised-learning',
+    difficulty: 'easy',
+    description: `
+## Binary Cross-Entropy Loss
+
+Implement the binary cross-entropy (log loss) function.
+
+### Formula
+\`\`\`
+BCE = -1/m * sum(y * log(p) + (1-y) * log(1-p))
+\`\`\`
+
+Where:
+- y: True labels (0 or 1)
+- p: Predicted probabilities
+- m: Number of samples
+
+### Numerical Stability
+Clip predictions to avoid log(0):
+\`\`\`python
+p = np.clip(p, 1e-15, 1 - 1e-15)
+\`\`\`
+    `,
+    examples: [
+      {
+        input: 'y = [1, 0, 1], p = [0.9, 0.1, 0.8]',
+        output: '0.1643',
+        explanation: 'Low loss for confident correct predictions',
+      },
+    ],
+    starterCode: `import numpy as np
+
+def binary_cross_entropy(y_true, y_pred):
+    """
+    Compute binary cross-entropy loss.
+
+    Args:
+        y_true: True labels (0 or 1)
+        y_pred: Predicted probabilities
+
+    Returns:
+        loss: Scalar BCE loss
+    """
+    # Your code here
+    pass
+`,
+    testCases: [
+      {
+        id: '1',
+        description: 'Perfect predictions',
+        input: '([1, 0, 1, 0], [1.0, 0.0, 1.0, 0.0])',
+        expected: '0.0',
+        hidden: false,
+      },
+      {
+        id: '2',
+        description: 'Typical case',
+        input: '([1, 0, 1], [0.9, 0.1, 0.8])',
+        expected: '0.1643',
+        hidden: false,
+      },
+    ],
+    hints: [
+      'Clip predictions for numerical stability',
+      'Apply the formula element-wise',
+      'Take the mean over all samples',
+    ],
+    solution: `import numpy as np
+
+def binary_cross_entropy(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    # Clip for numerical stability
+    y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15)
+
+    # BCE formula
+    loss = -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+
+    return round(loss, 4)
+`,
+  },
 ];
