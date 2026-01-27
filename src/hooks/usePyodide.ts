@@ -157,9 +157,12 @@ export function usePyodide(): UsePyodideReturn {
                                testCase.input.includes('.') ||
                                /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(testCase.input.trim());
 
+          // Lambda expressions start with '(lambda' and should be treated as expressions
+          const isLambdaExpression = testCase.input.trim().startsWith('(lambda');
+
           let testCode: string;
 
-          if (isExpression && !testCase.input.startsWith('[') && !testCase.input.startsWith('(')) {
+          if (isExpression && !testCase.input.startsWith('[') && (!testCase.input.startsWith('(') || isLambdaExpression)) {
             // Expression-based test: evaluate the expression directly
             testCode = `
 import numpy as np

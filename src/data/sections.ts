@@ -431,7 +431,7 @@ Neural networks are the foundation of deep learning. Understanding the math behi
 
 Let's build neural networks from scratch!
     `,
-    problems: ['cross-entropy-loss', 'mlp-forward', 'backprop-gradients', 'weight-init', 'batch-norm', 'dropout'],
+    problems: ['cross-entropy-loss', 'mlp-forward-backward', 'weight-init', 'batch-norm', 'dropout'],
   },
   {
     id: 'cnn',

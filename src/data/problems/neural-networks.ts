@@ -2,14 +2,14 @@ import { Problem } from '../../types';
 
 export const neuralNetworkProblems: Problem[] = [
   {
-    id: 'mlp-forward',
-    title: 'MLP Forward Pass',
+    id: 'mlp-forward-backward',
+    title: 'MLP Forward & Backward Pass',
     section: 'neural-networks',
-    difficulty: 'medium',
+    difficulty: 'hard',
     description: `
-## Multi-Layer Perceptron Forward Pass
+## MLP Forward & Backward Pass
 
-Implement the forward pass for a 2-layer MLP (Multi-Layer Perceptron).
+Implement both forward and backward passes for a 2-layer MLP (Multi-Layer Perceptron).
 
 ### Architecture
 \`\`\`
@@ -24,22 +24,30 @@ Z2 = A1 @ W2 + b2
 output = softmax(Z2)
 \`\`\`
 
-### Function Signature
-\`\`\`python
-def mlp_forward(X, W1, b1, W2, b2):
-    # Returns: output probabilities, cache (for backprop)
+Return: \`(output, cache)\` where cache = \`(X, Z1, A1, Z2, W1, W2)\`
+
+### Backward Pass (Backpropagation)
+Using the chain rule, gradients flow backwards:
+
+\`\`\`
+Loss → dZ2 → dW2, db2 → dA1 → dZ1 (ReLU) → dW1, db1
 \`\`\`
 
-### Expected Return Format
-Return a tuple of:
-1. \`output\`: Class probabilities (batch_size, n_classes)
-2. \`cache\`: Tuple containing \`(X, Z1, A1, Z2, W1, W2)\` for use in backpropagation
+**Key Formulas:**
+- \`dZ2 = output - Y_onehot\` (softmax + cross-entropy derivative)
+- \`dW2 = (1/m) * A1.T @ dZ2\`
+- \`db2 = (1/m) * sum(dZ2, axis=0)\`
+- \`dZ1 = (dZ2 @ W2.T) * (Z1 > 0)\` (ReLU derivative)
+- \`dW1 = (1/m) * X.T @ dZ1\`
+- \`db1 = (1/m) * sum(dZ1, axis=0)\`
+
+Return: \`{'dW1': ..., 'db1': ..., 'dW2': ..., 'db2': ...}\`
     `,
     examples: [
       {
         input: 'X shape (2, 3), hidden_size=4, output_size=2',
-        output: 'Probabilities shape (2, 2), each row sums to 1',
-        explanation: 'Batch of 2 samples through MLP to 2 classes',
+        output: 'Forward: probabilities (2, 2), rows sum to 1. Backward: gradients for all weights/biases',
+        explanation: 'Forward computes predictions; backward computes gradients for training',
       },
     ],
     starterCode: `import numpy as np
@@ -68,28 +76,103 @@ def mlp_forward(X, W1, b1, W2, b2):
     """
     # Your code here
     pass
+
+def mlp_backward(Y, output, cache):
+    """
+    Backward pass (backpropagation) for 2-layer MLP.
+
+    Args:
+        Y: One-hot encoded labels (batch_size, n_classes)
+        output: Predicted probabilities from forward pass
+        cache: Cached values from forward pass (X, Z1, A1, Z2, W1, W2)
+
+    Returns:
+        grads: Dictionary with dW1, db1, dW2, db2
+    """
+    X, Z1, A1, Z2, W1, W2 = cache
+    m = X.shape[0]  # batch size
+
+    # Your code here
+    pass
 `,
     testCases: [
       {
         id: '1',
-        description: 'Output shape correct',
+        description: 'Forward: output shape correct',
         input: 'mlp_forward(np.array([[1, 2, 3], [4, 5, 6]]), np.ones((3, 4)), np.zeros(4), np.ones((4, 2)), np.zeros(2))[0].shape',
         expected: '(2, 2)',
         hidden: false,
       },
       {
         id: '2',
-        description: 'Probabilities sum to 1',
+        description: 'Forward: probabilities sum to 1',
         input: 'round(float(np.sum(mlp_forward(np.array([[1, 0], [0, 1]]), np.array([[1, 0], [0, 1]]), np.zeros(2), np.array([[1, 0], [0, 1]]), np.zeros(2))[0][0])), 1)',
         expected: '1.0',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Backward: dW2 shape matches W2',
+        input: `(lambda: (
+            X := np.array([[1.0, 2.0], [3.0, 4.0]]),
+            W1 := np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]),
+            b1 := np.zeros(3),
+            W2 := np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
+            b2 := np.zeros(2),
+            result := mlp_forward(X, W1, b1, W2, b2),
+            output := result[0],
+            cache := result[1],
+            Y := np.array([[1, 0], [0, 1]]),
+            grads := mlp_backward(Y, output, cache),
+            grads['dW2'].shape == W2.shape
+        )[-1])()`,
+        expected: 'True',
+        hidden: false,
+      },
+      {
+        id: '4',
+        description: 'Backward: gradients are non-zero',
+        input: `(lambda: (
+            X := np.array([[1.0, 2.0], [3.0, 4.0]]),
+            W1 := np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]),
+            b1 := np.zeros(3),
+            W2 := np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
+            b2 := np.zeros(2),
+            result := mlp_forward(X, W1, b1, W2, b2),
+            output := result[0],
+            cache := result[1],
+            Y := np.array([[1, 0], [0, 1]]),
+            grads := mlp_backward(Y, output, cache),
+            bool(np.any(grads['dW1'] != 0) and np.any(grads['dW2'] != 0))
+        )[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '5',
+        description: 'Backward: all gradient keys present',
+        input: `(lambda: (
+            X := np.array([[1.0, 2.0]]),
+            W1 := np.array([[0.1, 0.2], [0.3, 0.4]]),
+            b1 := np.zeros(2),
+            W2 := np.array([[0.1], [0.2]]),
+            b2 := np.zeros(1),
+            result := mlp_forward(X, W1, b1, W2, b2),
+            grads := mlp_backward(np.array([[1]]), result[0], result[1]),
+            sorted(grads.keys())
+        )[-1])()`,
+        expected: '["dW1", "dW2", "db1", "db2"]',
+        hidden: true,
+      },
     ],
     hints: [
-      'First compute Z1 = X @ W1 + b1',
-      'Apply ReLU to get A1',
-      'Then Z2 = A1 @ W2 + b2',
-      'Apply softmax to get output probabilities',
+      'Forward: Compute Z1 = X @ W1 + b1, then A1 = ReLU(Z1)',
+      'Forward: Compute Z2 = A1 @ W2 + b2, then output = softmax(Z2)',
+      'Forward: Store cache = (X, Z1, A1, Z2, W1, W2) for backprop',
+      'Backward: Start from output layer: dZ2 = output - Y',
+      'Backward: dW2 = (1/m) * A1.T @ dZ2, db2 = (1/m) * sum(dZ2, axis=0)',
+      'Backward: Propagate through ReLU: dZ1 = (dZ2 @ W2.T) * (Z1 > 0)',
+      'Backward: dW1 = (1/m) * X.T @ dZ1, db1 = (1/m) * sum(dZ1, axis=0)',
     ],
     solution: `import numpy as np
 
@@ -113,121 +196,10 @@ def mlp_forward(X, W1, b1, W2, b2):
     cache = (X, Z1, A1, Z2, W1, W2)
 
     return output, cache
-`,
-  },
-  {
-    id: 'backprop-gradients',
-    title: 'Backpropagation Gradients',
-    section: 'neural-networks',
-    difficulty: 'hard',
-    description: `
-## Backpropagation: Compute Gradients
 
-Implement backpropagation to compute gradients for a 2-layer MLP with cross-entropy loss.
-
-### Chain Rule
-For each layer, we compute:
-\`\`\`
-dL/dW = dL/dZ * dZ/dW
-dL/db = dL/dZ * dZ/db
-\`\`\`
-
-### Gradient Flow
-\`\`\`
-Loss → dZ2 → dW2, db2 → dA1 → dZ1 (ReLU) → dW1, db1
-\`\`\`
-
-### Key Formulas
-- dZ2 = output - Y_onehot (softmax + cross-entropy)
-- dW2 = A1.T @ dZ2
-- dZ1 = (dZ2 @ W2.T) * (Z1 > 0)  (ReLU derivative)
-- dW1 = X.T @ dZ1
-    `,
-    examples: [
-      {
-        input: 'Predictions vs true labels',
-        output: 'Gradients dW1, db1, dW2, db2',
-        explanation: 'Gradients flow backwards through the network',
-      },
-    ],
-    starterCode: `import numpy as np
-
-def backprop(X, Y, output, cache):
-    """
-    Compute gradients for 2-layer MLP.
-
-    Args:
-        X: Input data (batch_size, n_features)
-        Y: One-hot encoded labels (batch_size, n_classes)
-        output: Predicted probabilities from forward pass
-        cache: Cached values from forward pass (X, Z1, A1, Z2, W1, W2)
-
-    Returns:
-        grads: Dictionary with dW1, db1, dW2, db2
-    """
-    m = X.shape[0]  # batch size
+def mlp_backward(Y, output, cache):
     X, Z1, A1, Z2, W1, W2 = cache
-
-    # Your code here
-    pass
-`,
-    testCases: [
-      {
-        id: '1',
-        description: 'dW2 shape matches W2',
-        input: `(lambda: (
-            X := np.array([[1.0, 2.0], [3.0, 4.0]]),
-            W1 := np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]),
-            b1 := np.zeros(3),
-            W2 := np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
-            b2 := np.zeros(2),
-            Z1 := X @ W1 + b1,
-            A1 := np.maximum(0, Z1),
-            Z2 := A1 @ W2 + b2,
-            exp_z := np.exp(Z2 - np.max(Z2, axis=1, keepdims=True)),
-            output := exp_z / np.sum(exp_z, axis=1, keepdims=True),
-            Y := np.array([[1, 0], [0, 1]]),
-            cache := (X, Z1, A1, Z2, W1, W2),
-            grads := backprop(X, Y, output, cache),
-            grads['dW2'].shape == W2.shape
-        )[-1])()`,
-        expected: 'True',
-        hidden: false,
-      },
-      {
-        id: '2',
-        description: 'Gradients are non-zero',
-        input: `(lambda: (
-            X := np.array([[1.0, 2.0], [3.0, 4.0]]),
-            W1 := np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]),
-            b1 := np.zeros(3),
-            W2 := np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]),
-            b2 := np.zeros(2),
-            Z1 := X @ W1 + b1,
-            A1 := np.maximum(0, Z1),
-            Z2 := A1 @ W2 + b2,
-            exp_z := np.exp(Z2 - np.max(Z2, axis=1, keepdims=True)),
-            output := exp_z / np.sum(exp_z, axis=1, keepdims=True),
-            Y := np.array([[1, 0], [0, 1]]),
-            cache := (X, Z1, A1, Z2, W1, W2),
-            grads := backprop(X, Y, output, cache),
-            bool(np.any(grads['dW1'] != 0) and np.any(grads['dW2'] != 0))
-        )[-1])()`,
-        expected: 'True',
-        hidden: true,
-      },
-    ],
-    hints: [
-      'Start from the output: dZ2 = output - Y',
-      'dW2 = (1/m) * A1.T @ dZ2',
-      'Propagate through ReLU: dZ1 = (dZ2 @ W2.T) * (Z1 > 0)',
-      'dW1 = (1/m) * X.T @ dZ1',
-    ],
-    solution: `import numpy as np
-
-def backprop(X, Y, output, cache):
     m = X.shape[0]
-    X, Z1, A1, Z2, W1, W2 = cache
 
     # Output layer gradient (softmax + cross-entropy)
     dZ2 = output - Y
