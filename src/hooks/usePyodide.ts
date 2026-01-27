@@ -41,6 +41,15 @@ export function usePyodide(): UsePyodideReturn {
     setOutput(prev => [...prev, text]);
   }, []);
 
+  const appendMultilineOutput = useCallback((text: string, prefix = '') => {
+    const lines = text.split('\n');
+    for (const line of lines) {
+      if (line.trim()) {
+        setOutput(prev => [...prev, prefix ? `${prefix}${line}` : line]);
+      }
+    }
+  }, []);
+
   const clearOutput = useCallback(() => {
     setOutput([]);
   }, []);
@@ -72,13 +81,21 @@ export function usePyodide(): UsePyodideReturn {
       // Set up stdout/stderr capture
       pyodide.setStdout({
         batched: (text: string) => {
-          if (text.trim()) appendOutput(text);
+          // Split by newlines to show each line separately
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.trim()) appendOutput(line);
+          }
         },
       });
 
       pyodide.setStderr({
         batched: (text: string) => {
-          if (text.trim()) appendOutput(`[Error] ${text}`);
+          // Split by newlines to show each line separately
+          const lines = text.split('\n');
+          for (const line of lines) {
+            if (line.trim()) appendOutput(`[Error] ${line}`);
+          }
         },
       });
 
@@ -113,10 +130,10 @@ export function usePyodide(): UsePyodideReturn {
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Execution error';
-      appendOutput(`[Error] ${message}`);
+      appendMultilineOutput(message, '[Error] ');
       return { success: false, error: message };
     }
-  }, [appendOutput, clearOutput]);
+  }, [appendMultilineOutput, clearOutput]);
 
   const runTests = useCallback(async (
     code: string,
@@ -279,13 +296,14 @@ result_str
             actual: errorMsg,
             hidden: testCase.hidden,
           });
-          appendOutput(`Test ${testCase.id}: ERROR - ${errorMsg}`);
+          appendOutput(`Test ${testCase.id}: ERROR`);
+          appendMultilineOutput(errorMsg, '[Error] ');
         }
       }
     } catch (err) {
       // Error in user code
       const errorMsg = err instanceof Error ? err.message : 'Code execution error';
-      appendOutput(`[Error] ${errorMsg}`);
+      appendMultilineOutput(errorMsg, '[Error] ');
       return testCases.map(tc => ({
         id: tc.id,
         passed: false,
@@ -297,7 +315,7 @@ result_str
     }
 
     return results;
-  }, [appendOutput, clearOutput]);
+  }, [appendOutput, appendMultilineOutput, clearOutput]);
 
   return {
     isLoading,
