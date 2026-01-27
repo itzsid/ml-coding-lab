@@ -29,6 +29,11 @@ output = softmax(Z2)
 def mlp_forward(X, W1, b1, W2, b2):
     # Returns: output probabilities, cache (for backprop)
 \`\`\`
+
+### Expected Return Format
+Return a tuple of:
+1. \`output\`: Class probabilities (batch_size, n_classes)
+2. \`cache\`: Tuple containing \`(X, Z1, A1, Z2, W1, W2)\` for use in backpropagation
     `,
     examples: [
       {
@@ -59,7 +64,7 @@ def mlp_forward(X, W1, b1, W2, b2):
 
     Returns:
         output: Class probabilities (batch_size, n_classes)
-        cache: Tuple of intermediate values for backprop
+        cache: Tuple (X, Z1, A1, Z2, W1, W2) for backprop
     """
     # Your code here
     pass
