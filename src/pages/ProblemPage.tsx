@@ -24,6 +24,7 @@ export default function ProblemPage() {
   const [code, setCode] = useState('');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [isEditorMaximized, setIsEditorMaximized] = useState(false);
 
   // Load saved code or starter code
   useEffect(() => {
@@ -130,22 +131,9 @@ export default function ProblemPage() {
       </div>
 
       {/* Main Content - Split Pane */}
-      <Split
-        className="flex flex-1 overflow-hidden"
-        sizes={[40, 60]}
-        minSize={300}
-        gutterSize={8}
-        gutterAlign="center"
-      >
-        {/* Left Panel - Problem Description */}
-        <div className="problem-panel overflow-y-auto overflow-x-hidden p-6 bg-gray-50 min-w-0">
-          <ProblemDescription problem={problem} />
-          <Examples examples={problem.examples} />
-          <Hints hints={problem.hints} solution={problem.solution} />
-        </div>
-
-        {/* Right Panel - Editor and Console */}
-        <div className="flex flex-col overflow-hidden bg-white">
+      {isEditorMaximized ? (
+        /* Maximized Layout - Editor and Console side by side */
+        <div className="flex flex-col flex-1 overflow-hidden bg-white">
           {/* Action Bar */}
           <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center gap-2">
@@ -174,6 +162,13 @@ export default function ProblemPage() {
                 </Link>
               )}
               <button
+                onClick={() => setIsEditorMaximized(!isEditorMaximized)}
+                className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors"
+                title={isEditorMaximized ? 'Restore layout' : 'Maximize editor'}
+              >
+                {isEditorMaximized ? '⊟ Restore' : '⊞ Maximize'}
+              </button>
+              <button
                 onClick={handleReset}
                 className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors"
               >
@@ -182,13 +177,13 @@ export default function ProblemPage() {
             </div>
           </div>
 
-          {/* Editor and Results */}
+          {/* Maximized: Editor and Console side by side */}
           <Split
-            className="flex-1 overflow-hidden"
-            direction="vertical"
+            className="flex flex-1 overflow-hidden"
             sizes={[60, 40]}
-            minSize={100}
+            minSize={200}
             gutterSize={8}
+            gutterAlign="center"
           >
             {/* Code Editor */}
             <div className="h-full overflow-hidden p-4">
@@ -207,7 +202,94 @@ export default function ProblemPage() {
             </div>
           </Split>
         </div>
-      </Split>
+      ) : (
+        /* Normal Layout - Problem description on left, Editor/Console stacked on right */
+        <Split
+          className="flex flex-1 overflow-hidden"
+          sizes={[40, 60]}
+          minSize={300}
+          gutterSize={8}
+          gutterAlign="center"
+        >
+          {/* Left Panel - Problem Description */}
+          <div className="problem-panel overflow-y-auto overflow-x-hidden p-6 bg-gray-50 min-w-0">
+            <ProblemDescription problem={problem} />
+            <Examples examples={problem.examples} />
+            <Hints hints={problem.hints} solution={problem.solution} />
+          </div>
+
+          {/* Right Panel - Editor and Console */}
+          <div className="flex flex-col overflow-hidden bg-white">
+            {/* Action Bar */}
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRunTests}
+                  disabled={!isReady || isRunning}
+                  className="px-4 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-md hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isRunning ? 'Running...' : 'Run Tests'}
+                </button>
+                <span className="text-xs text-gray-400">or</span>
+                <div className="flex items-center gap-1 text-gray-500">
+                  <kbd className="px-1.5 py-0.5 text-xs font-mono bg-gray-100 border border-gray-300 rounded shadow-sm">Shift</kbd>
+                  <span className="text-xs">+</span>
+                  <kbd className="px-1.5 py-0.5 text-xs font-mono bg-gray-100 border border-gray-300 rounded shadow-sm">Enter</kbd>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {testResults.length > 0 && testResults.every(r => r.passed) && nextProblemId && (
+                  <Link
+                    to={`/problem/${sectionId}/${nextProblemId}`}
+                    className="px-4 py-1.5 bg-green-100 text-green-700 text-sm font-medium rounded-md hover:bg-green-200 transition-colors"
+                  >
+                    Next Problem →
+                  </Link>
+                )}
+                <button
+                  onClick={() => setIsEditorMaximized(!isEditorMaximized)}
+                  className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors"
+                  title={isEditorMaximized ? 'Restore layout' : 'Maximize editor'}
+                >
+                  {isEditorMaximized ? '⊟ Restore' : '⊞ Maximize'}
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {/* Editor and Results */}
+            <Split
+              className="flex-1 overflow-hidden"
+              direction="vertical"
+              sizes={[60, 40]}
+              minSize={100}
+              gutterSize={8}
+            >
+              {/* Code Editor */}
+              <div className="h-full overflow-hidden p-4">
+                <CodeEditor
+                  value={code}
+                  onChange={handleCodeChange}
+                  height="100%"
+                  onRun={handleRunTests}
+                />
+              </div>
+
+              {/* Console and Test Results */}
+              <div className="overflow-auto p-4 space-y-4 bg-gray-50">
+                <TestResults results={testResults} isRunning={isRunning} />
+                <Console output={output} isLoading={isRunning} />
+              </div>
+            </Split>
+          </div>
+        </Split>
+      )}
     </div>
   );
 }
