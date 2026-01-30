@@ -9,6 +9,7 @@ This is a LeetCode/HelloInterview-style web application for learning ML by build
 - Write Python code in a Monaco editor
 - Execute code in-browser via Pyodide (WebAssembly)
 - Run tests and see pass/fail results
+- Edit test cases to experiment with different inputs/expected values
 - Track progress across sections
 - Use a Python scratchpad to experiment with code (NumPy pre-loaded)
 - Submit feedback via in-app form (sends email via Formspree)
@@ -43,7 +44,7 @@ src/
 │   ├── CodeEditor/
 │   │   └── CodeEditor.tsx   # Monaco editor wrapper
 │   ├── Console/
-│   │   └── Console.tsx      # Output/debug console
+│   │   └── Console.tsx      # Tests/Output tabs with editable test cases
 │   ├── ProblemView/
 │   │   ├── ProblemDescription.tsx  # Markdown renderer
 │   │   ├── Examples.tsx            # Input/output examples
@@ -102,6 +103,7 @@ src/
 ### Main UI
 - **`src/pages/ProblemPage.tsx`** - The main coding interface with split panes (problem description | code editor + console)
 - **`src/pages/ScratchpadPage.tsx`** - Python playground for freeform experimentation (accessible via header button, code auto-saves to localStorage key `ml-interview-scratchpad`)
+- **`src/components/Console/Console.tsx`** - Console with Tests/Output tabs; users can edit visible test cases to experiment with different inputs
 
 ## Current Sections & Problems
 
@@ -543,6 +545,7 @@ The problem content was developed using these resources:
 ## Testing
 
 Tests are in `src/__tests__/`:
+- `Console.test.tsx` - Console component (editable test cases, tabs, parsing)
 - `ProgressContext.test.tsx` - Progress state management
 - `problems.test.ts` - Problem data validation
 
