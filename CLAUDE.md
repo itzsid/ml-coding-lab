@@ -321,7 +321,13 @@ This ensures users know exactly what to store and in what order, which is critic
 
 ### Adding a New Section
 
-1. Add to `src/data/sections.ts`:
+**IMPORTANT CHECKLIST** - Follow ALL steps to avoid common mistakes:
+
+1. **Create the problems file** `src/data/problems/new-section.ts`:
+   - Define all problems with solutions
+   - **VERIFY each solution against test cases** (see "Validating Test Cases" below)
+
+2. **Add section to `src/data/sections.ts`**:
 ```typescript
 {
   id: 'new-section-id',
@@ -333,8 +339,39 @@ This ensures users know exactly what to store and in what order, which is critic
 }
 ```
 
-2. Create `src/data/problems/new-section.ts` with problem definitions
-3. Export from `src/data/problems/index.ts`
+3. **Export from `src/data/problems/index.ts`**:
+   - Add import: `import { newSectionProblems } from './new-section';`
+   - Add to allProblems: `...newSectionProblems,`
+   - Add to exports: `newSectionProblems,`
+
+4. **Update test expectations** in `src/__tests__/problems.test.ts`:
+   - Update sections count: `expect(sections.length).toBe(N)` where N is new total
+
+5. **Verify markdown rendering**:
+   - Run `npm run dev` and navigate to the new section
+   - Check that tables, code blocks, and formatting render correctly
+
+6. **Run full test suite**: `npm test` - all tests must pass
+
+#### Section Introduction Markdown Requirements
+
+The section introduction uses `ReactMarkdown` with `remarkGfm`. Ensure your markdown includes:
+
+- **Code blocks**: Always specify language for syntax highlighting
+  ```markdown
+  \`\`\`python
+  # Code here
+  \`\`\`
+  ```
+
+- **Tables**: Use standard markdown table syntax (remarkGfm handles this)
+  ```markdown
+  | Column 1 | Column 2 |
+  |----------|----------|
+  | Value 1  | Value 2  |
+  ```
+
+- **Inline code**: Use single backticks: \`code\`
 
 ### Test Case Format & Guidelines
 
@@ -438,11 +475,48 @@ Or multi-step validation:
 
 #### Validating Test Cases
 
-Before adding new test cases, verify they pass with the solution:
+**CRITICAL**: Before adding new problems, you MUST verify solutions work:
+
+**Option 1: Manual Testing via Browser**
 1. Run the dev server: `npm run dev`
 2. Navigate to the problem
 3. Click "Show Solution" and copy it to the editor
 4. Click "Run Tests" - all tests should pass
+
+**Option 2: Python Script Validation (Recommended for bulk additions)**
+When adding multiple problems, create a Python test script to validate all solutions:
+
+```python
+import numpy as np
+
+# Copy solution function
+def my_function(...):
+    # solution code
+    pass
+
+# Test against expected values
+result = my_function(test_input)
+assert str(result) == expected, f"Got {result}, expected {expected}"
+```
+
+Run with: `python3 test_script.py`
+
+**Common Test Case Mistakes to Avoid**:
+
+1. **Incorrect expected values**: Always COMPUTE the expected value, don't guess
+   - Wrong: Assuming `1 + 0.9*3 = 3.7` (actually 3.7)
+   - Right: Actually calculate: `1 + 0.9*3 = 3.7` ✓
+
+2. **Rounding mismatches**: Match the rounding in solution and expected
+   - Solution returns `round(x, 2)` → expected should match precision
+
+3. **List vs string representation**: `[[1, 2], [3, 4]]` not `[[1,2],[3,4]]`
+   - Python's default spacing matters for string comparison
+
+4. **Off-by-one in formulas**: Double-check mathematical formulas
+   - TD error: `r + γ*V(s') - V(s)` (not `r + γ*V(s) - V(s')`)
+
+5. **Tolerance in floating-point tests**: Use `np.allclose` with appropriate `atol`
 
 ### Modifying the UI
 

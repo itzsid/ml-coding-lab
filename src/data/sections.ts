@@ -574,7 +574,88 @@ Let's implement generative models!
   },
 
   // ==========================================
-  // PART 5: CAPSTONE - END-TO-END IMPLEMENTATIONS
+  // PART 5: REINFORCEMENT LEARNING
+  // ==========================================
+  {
+    id: 'reinforcement-learning',
+    title: 'Reinforcement Learning',
+    description: 'Master RL fundamentals from Q-learning to policy gradients.',
+    icon: '🎮',
+    introduction: `
+# Reinforcement Learning
+
+Reinforcement learning (RL) trains agents to make decisions by learning from rewards and punishments through trial and error.
+
+## Key Concepts
+
+### The RL Framework
+- **Agent**: The learner/decision-maker
+- **Environment**: What the agent interacts with
+- **State (s)**: Current situation
+- **Action (a)**: What the agent can do
+- **Reward (r)**: Feedback signal
+- **Policy (π)**: Strategy for choosing actions
+
+### Value Functions
+- **State Value V(s)**: Expected return starting from state s
+- **Action Value Q(s,a)**: Expected return taking action a in state s
+
+### Bellman Equations
+\`\`\`python
+V(s) = E[r + γ * V(s')]
+Q(s,a) = E[r + γ * max_a' Q(s',a')]
+\`\`\`
+
+### Key Algorithms
+
+| Algorithm | Type | Policy |
+|-----------|------|--------|
+| Q-Learning | Value-based | Off-policy |
+| SARSA | Value-based | On-policy |
+| REINFORCE | Policy-based | On-policy |
+| Actor-Critic | Hybrid | On-policy |
+| PPO | Policy-based | On-policy |
+
+### Exploration vs Exploitation
+- **Exploration**: Try new actions to discover better strategies
+- **Exploitation**: Use known good actions to maximize reward
+- **ε-greedy**: Simple balance (random with probability ε)
+
+### RL for LLMs (RLHF)
+- **Reward Modeling**: Learn preferences from human feedback
+- **PPO for LLMs**: Fine-tune with KL constraints
+- **DPO**: Direct preference optimization without reward model
+
+### Interview Essentials
+- Implement Q-learning and SARSA from scratch
+- Explain on-policy vs off-policy
+- Understand policy gradients and REINFORCE
+- Know GAE and PPO for modern deep RL
+- **RLHF**: Reward modeling, KL penalties, DPO
+
+Master these concepts for ML interviews at top companies!
+    `,
+    problems: [
+      'rl-discounted-return',
+      'rl-epsilon-greedy',
+      'rl-bellman-value',
+      'rl-q-learning-update',
+      'rl-sarsa-update',
+      'rl-td0-prediction',
+      'rl-value-iteration',
+      'rl-n-step-return',
+      'rl-policy-gradient',
+      'rl-advantage-estimation',
+      'rl-ppo-clip',
+      'rl-reward-modeling',
+      'rl-dpo-loss',
+      'rl-kl-penalty',
+      'rl-ppo-llm-objective',
+    ],
+  },
+
+  // ==========================================
+  // PART 6: CAPSTONE - END-TO-END IMPLEMENTATIONS
   // ==========================================
   {
     id: 'e2e-implementations',

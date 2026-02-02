@@ -13,6 +13,7 @@ import { numpyFundamentalsProblems } from './numpy-fundamentals';
 import { einsumProblems } from './einsum';
 import { pytorchBasicsProblems } from './pytorch-basics';
 import { e2eImplementationProblems } from './e2e-implementations';
+import { reinforcementLearningProblems } from './reinforcement-learning';
 
 export const allProblems: Problem[] = [
   ...pythonBasicsProblems,
@@ -29,6 +30,7 @@ export const allProblems: Problem[] = [
   ...einsumProblems,
   ...pytorchBasicsProblems,
   ...e2eImplementationProblems,
+  ...reinforcementLearningProblems,
 ];
 
 export function getProblemById(id: string): Problem | undefined {
@@ -54,4 +56,5 @@ export {
   einsumProblems,
   pytorchBasicsProblems,
   e2eImplementationProblems,
+  reinforcementLearningProblems,
 };

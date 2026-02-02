@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { sections } from '../data/sections';
 import { getProblemsBySection } from '../data/problems';
 import { useProgress } from '../context/ProgressContext';
@@ -60,6 +61,7 @@ export default function SectionPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Introduction</h2>
         <div className="prose prose-sm max-w-none">
           <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
             components={{
               h1: ({ children }) => (
                 <h1 className="text-xl font-bold text-gray-900 mt-0 mb-4">{children}</h1>
@@ -73,20 +75,22 @@ export default function SectionPage() {
               p: ({ children }) => (
                 <p className="text-gray-600 mb-3 leading-relaxed">{children}</p>
               ),
+              pre: ({ children }) => (
+                <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-3 text-sm text-gray-800">
+                  {children}
+                </pre>
+              ),
               code: ({ className, children }) => {
-                const isBlock = className?.includes('language-');
-                if (isBlock) {
+                // Check if this is inline code (no className and not inside pre)
+                const isInline = !className && !String(children).includes('\n');
+                if (isInline) {
                   return (
-                    <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-3">
-                      <code className="text-sm text-gray-800">{children}</code>
-                    </pre>
+                    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-primary-600 text-sm">
+                      {children}
+                    </code>
                   );
                 }
-                return (
-                  <code className="bg-gray-100 px-1.5 py-0.5 rounded text-primary-600 text-sm">
-                    {children}
-                  </code>
-                );
+                return <code className="text-sm">{children}</code>;
               },
               ul: ({ children }) => (
                 <ul className="list-disc list-inside text-gray-600 space-y-1 mb-3">{children}</ul>
@@ -94,6 +98,30 @@ export default function SectionPage() {
               li: ({ children }) => <li className="text-gray-600">{children}</li>,
               strong: ({ children }) => (
                 <strong className="text-gray-900 font-semibold">{children}</strong>
+              ),
+              table: ({ children }) => (
+                <div className="overflow-x-auto my-4">
+                  <table className="min-w-full border-collapse border border-gray-300 text-sm">
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children }) => (
+                <thead className="bg-gray-100">{children}</thead>
+              ),
+              tbody: ({ children }) => (
+                <tbody className="divide-y divide-gray-200">{children}</tbody>
+              ),
+              tr: ({ children }) => <tr>{children}</tr>,
+              th: ({ children }) => (
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold text-gray-700">
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td className="border border-gray-300 px-3 py-2 text-gray-600">
+                  {children}
+                </td>
               ),
             }}
           >
