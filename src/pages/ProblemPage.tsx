@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Split from 'react-split';
 import { getProblemById } from '../data/problems';
@@ -13,6 +13,7 @@ import Hints from '../components/ProblemView/Hints';
 import TestResults from '../components/TestRunner/TestResults';
 import SEO from '../components/SEO/SEO';
 import { TestResult, TestCase } from '../types';
+import SuccessBanner from '../components/SuccessBanner/SuccessBanner';
 
 export default function ProblemPage() {
   const { sectionId, problemId } = useParams<{ sectionId: string; problemId: string }>();
@@ -31,6 +32,8 @@ export default function ProblemPage() {
   const [showShortcutHint, setShowShortcutHint] = useState(
     () => !localStorage.getItem('ml-lab-shortcut-hint-dismissed')
   );
+  const [showCelebration, setShowCelebration] = useState(false);
+  const wasCompletedRef = useRef(false);
 
   // Load saved code or starter code
   useEffect(() => {
@@ -40,6 +43,14 @@ export default function ProblemPage() {
       setEditableTestCases(problem.testCases);
     }
   }, [problem, sectionId, getProblemProgress]);
+
+  // Track if problem was already completed to prevent repeat celebrations
+  useEffect(() => {
+    if (problem && sectionId) {
+      const savedProgress = getProblemProgress(sectionId, problem.id);
+      wasCompletedRef.current = savedProgress.status === 'completed';
+    }
+  }, [problem?.id, sectionId, getProblemProgress]);
 
   // Auto-save code
   useEffect(() => {
@@ -106,6 +117,10 @@ export default function ProblemPage() {
       const allPassed = results.every(r => r.passed);
       if (allPassed) {
         updateProblemStatus(sectionId, problem.id, 'completed');
+        if (!wasCompletedRef.current) {
+          setShowCelebration(true);
+          wasCompletedRef.current = true;
+        }
       }
     } finally {
       setIsRunning(false);
@@ -144,6 +159,7 @@ export default function ProblemPage() {
         canonical={`/problem/${sectionId}/${problemId}`}
         keywords={`${problem.title}, ${section.title}, machine learning, coding practice, ${problem.difficulty}`}
       />
+      <SuccessBanner show={showCelebration} onDismiss={() => setShowCelebration(false)} />
       {/* Problem Header */}
       <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
         <div className="flex items-center gap-3">
