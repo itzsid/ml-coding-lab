@@ -54,8 +54,8 @@ export default function ProblemPage() {
 
   const handleReset = useCallback(() => {
     if (problem) {
-      const hasChanges = code \!== problem.starterCode;
-      if (\!hasChanges || window.confirm('Reset your code? Your changes will be lost.')) {
+      const hasChanges = code !== problem.starterCode;
+      if (!hasChanges || window.confirm('Reset your code? Your changes will be lost.')) {
         setCode(problem.starterCode);
         setTestResults([]);
         setEditableTestCases(problem.testCases);
