@@ -481,6 +481,64 @@ describe('Console Component', () => {
     });
   });
 
+
+  describe('Results Tab', () => {
+    it('should show Results tab when testResults are provided', () => {
+      const testResults = [
+        { id: '1', passed: true, description: 'Test 1', expected: '6', actual: '6', hidden: false },
+        { id: '2', passed: false, description: 'Test 2', expected: '15', actual: '10', hidden: false },
+      ];
+
+      render(
+        <Console
+          output={[]}
+          testResults={testResults}
+          problemId="test-problem"
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /Results \(1\/2\)/ })).toBeInTheDocument();
+    });
+
+    it('should not show Results tab when no testResults', () => {
+      render(<Console output={[]} problemId="test-problem" />);
+
+      expect(screen.queryByRole('button', { name: /Results/ })).not.toBeInTheDocument();
+    });
+
+    it('should auto-switch to Results tab when testResults arrive', () => {
+      const testCases = [createTestCase('1', 'func([1])', '1', false)];
+      const testResults = [
+        { id: '1', passed: true, description: 'Test 1', expected: '1', actual: '1', hidden: false },
+      ];
+
+      const { rerender } = render(
+        <Console
+          output={[]}
+          testCases={testCases}
+          problemId="test-problem"
+        />
+      );
+
+      // Initially on Tests tab
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+
+      // Add test results
+      rerender(
+        <Console
+          output={[]}
+          testCases={testCases}
+          testResults={testResults}
+          problemId="test-problem"
+        />
+      );
+
+      // Should show Results tab content
+      expect(screen.getByText('Test Results')).toBeInTheDocument();
+      expect(screen.getByText('1/1 passed')).toBeInTheDocument();
+    });
+  });
+
   describe('Output Display', () => {
     it('should show placeholder when no output', () => {
       render(<Console output={[]} />);
