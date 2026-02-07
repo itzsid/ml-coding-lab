@@ -2,7 +2,11 @@ import { NavLink } from 'react-router-dom';
 import { useProgress } from '../../context/ProgressContext';
 import { sections } from '../../data/sections';
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps) {
   const { getSectionProgress } = useProgress();
 
   return (
@@ -17,6 +21,7 @@ export default function Sidebar() {
             <NavLink
               key={section.id}
               to={`/section/${section.id}`}
+              onClick={onNavigate}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                   isActive
