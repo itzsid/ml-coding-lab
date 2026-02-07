@@ -101,8 +101,9 @@ export default function ProblemPage() {
     );
   }
 
-  // Find next problem in section
+  // Find prev/next problems in section
   const currentIndex = section.problems.indexOf(problem.id);
+  const prevProblemId = currentIndex > 0 ? section.problems[currentIndex - 1] : undefined;
   const nextProblemId = section.problems[currentIndex + 1];
 
   // Create description from first paragraph of problem description
@@ -136,6 +137,35 @@ export default function ProblemPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Problem Navigation */}
+          <div className="flex items-center gap-1">
+            {prevProblemId ? (
+              <Link
+                to={`/problem/${sectionId}/${prevProblemId}`}
+                className="px-2 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              >
+                ← Prev
+              </Link>
+            ) : (
+              <span className="px-2 py-1 text-sm text-gray-300 cursor-default">← Prev</span>
+            )}
+            <span className="text-xs text-gray-400">
+              ({currentIndex + 1}/{section.problems.length})
+            </span>
+            {nextProblemId ? (
+              <Link
+                to={`/problem/${sectionId}/${nextProblemId}`}
+                className="px-2 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              >
+                Next →
+              </Link>
+            ) : (
+              <span className="px-2 py-1 text-sm text-gray-300 cursor-default">Next →</span>
+            )}
+          </div>
+
+          <span className="text-gray-300">|</span>
+
           {!isReady && (
             <span className="text-gray-500 text-sm flex items-center gap-2">
               <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
