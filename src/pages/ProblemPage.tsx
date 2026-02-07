@@ -54,13 +54,16 @@ export default function ProblemPage() {
 
   const handleReset = useCallback(() => {
     if (problem) {
-      setCode(problem.starterCode);
-      setTestResults([]);
-      setEditableTestCases(problem.testCases);
-      setResetKey(k => k + 1);
-      clearOutput();
+      const hasChanges = code \!== problem.starterCode;
+      if (\!hasChanges || window.confirm('Reset your code? Your changes will be lost.')) {
+        setCode(problem.starterCode);
+        setTestResults([]);
+        setEditableTestCases(problem.testCases);
+        setResetKey(k => k + 1);
+        clearOutput();
+      }
     }
-  }, [problem, clearOutput]);
+  }, [problem, code, clearOutput]);
 
   const extractFunctionName = (starterCode: string): string => {
     // Find all function definitions and return the last one
