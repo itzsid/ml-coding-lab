@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +13,27 @@ export default function SectionPage() {
 
   const section = sections.find(s => s.id === sectionId);
   const problems = sectionId ? getProblemsBySection(sectionId) : [];
+
+  const [isIntroCollapsed, setIsIntroCollapsed] = useState(() => {
+    if (!sectionId) return false;
+    return localStorage.getItem(`section-intro-collapsed-${sectionId}`) === 'true';
+  });
+
+  // Reset collapse state when section changes
+  useEffect(() => {
+    if (sectionId) {
+      const saved = localStorage.getItem(`section-intro-collapsed-${sectionId}`);
+      setIsIntroCollapsed(saved === 'true');
+    }
+  }, [sectionId]);
+
+  const toggleIntro = () => {
+    const newValue = !isIntroCollapsed;
+    setIsIntroCollapsed(newValue);
+    if (sectionId) {
+      localStorage.setItem(`section-intro-collapsed-${sectionId}`, String(newValue));
+    }
+  };
 
   if (!section) {
     return (
@@ -58,76 +80,92 @@ export default function SectionPage() {
 
       {/* Introduction */}
       <div className="bg-white rounded-xl p-6 mb-8 border border-gray-200 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Introduction</h2>
-        <div className="prose prose-sm max-w-none">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              h1: ({ children }) => (
-                <h1 className="text-xl font-bold text-gray-900 mt-0 mb-4">{children}</h1>
-              ),
-              h2: ({ children }) => (
-                <h2 className="text-lg font-semibold text-gray-900 mt-6 mb-3">{children}</h2>
-              ),
-              h3: ({ children }) => (
-                <h3 className="text-base font-medium text-gray-700 mt-4 mb-2">{children}</h3>
-              ),
-              p: ({ children }) => (
-                <p className="text-gray-600 mb-3 leading-relaxed">{children}</p>
-              ),
-              pre: ({ children }) => (
-                <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-3 text-sm text-gray-800">
-                  {children}
-                </pre>
-              ),
-              code: ({ className, children }) => {
-                // Check if this is inline code (no className and not inside pre)
-                const isInline = !className && !String(children).includes('\n');
-                if (isInline) {
-                  return (
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-primary-600 text-sm">
-                      {children}
-                    </code>
-                  );
-                }
-                return <code className="text-sm">{children}</code>;
-              },
-              ul: ({ children }) => (
-                <ul className="list-disc list-inside text-gray-600 space-y-1 mb-3">{children}</ul>
-              ),
-              li: ({ children }) => <li className="text-gray-600">{children}</li>,
-              strong: ({ children }) => (
-                <strong className="text-gray-900 font-semibold">{children}</strong>
-              ),
-              table: ({ children }) => (
-                <div className="overflow-x-auto my-4">
-                  <table className="min-w-full border-collapse border border-gray-300 text-sm">
-                    {children}
-                  </table>
-                </div>
-              ),
-              thead: ({ children }) => (
-                <thead className="bg-gray-100">{children}</thead>
-              ),
-              tbody: ({ children }) => (
-                <tbody className="divide-y divide-gray-200">{children}</tbody>
-              ),
-              tr: ({ children }) => <tr>{children}</tr>,
-              th: ({ children }) => (
-                <th className="border border-gray-300 px-3 py-2 text-left font-semibold text-gray-700">
-                  {children}
-                </th>
-              ),
-              td: ({ children }) => (
-                <td className="border border-gray-300 px-3 py-2 text-gray-600">
-                  {children}
-                </td>
-              ),
-            }}
+        <button
+          onClick={toggleIntro}
+          className="w-full flex items-center justify-between text-left"
+        >
+          <h2 className="text-lg font-semibold text-gray-900">Introduction</h2>
+          <svg
+            className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+              isIntroCollapsed ? '' : 'rotate-180'
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            {section.introduction}
-          </ReactMarkdown>
-        </div>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {!isIntroCollapsed && (
+          <div className="prose prose-sm max-w-none mt-4">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children }) => (
+                  <h1 className="text-xl font-bold text-gray-900 mt-0 mb-4">{children}</h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="text-lg font-semibold text-gray-900 mt-6 mb-3">{children}</h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-base font-medium text-gray-700 mt-4 mb-2">{children}</h3>
+                ),
+                p: ({ children }) => (
+                  <p className="text-gray-600 mb-3 leading-relaxed">{children}</p>
+                ),
+                pre: ({ children }) => (
+                  <pre className="bg-gray-100 rounded-lg p-4 overflow-x-auto my-3 text-sm text-gray-800">
+                    {children}
+                  </pre>
+                ),
+                code: ({ className, children }) => {
+                  const isInline = !className && !String(children).includes('\n');
+                  if (isInline) {
+                    return (
+                      <code className="bg-gray-100 px-1.5 py-0.5 rounded text-primary-600 text-sm">
+                        {children}
+                      </code>
+                    );
+                  }
+                  return <code className="text-sm">{children}</code>;
+                },
+                ul: ({ children }) => (
+                  <ul className="list-disc list-inside text-gray-600 space-y-1 mb-3">{children}</ul>
+                ),
+                li: ({ children }) => <li className="text-gray-600">{children}</li>,
+                strong: ({ children }) => (
+                  <strong className="text-gray-900 font-semibold">{children}</strong>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-4">
+                    <table className="min-w-full border-collapse border border-gray-300 text-sm">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-gray-100">{children}</thead>
+                ),
+                tbody: ({ children }) => (
+                  <tbody className="divide-y divide-gray-200">{children}</tbody>
+                ),
+                tr: ({ children }) => <tr>{children}</tr>,
+                th: ({ children }) => (
+                  <th className="border border-gray-300 px-3 py-2 text-left font-semibold text-gray-700">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="border border-gray-300 px-3 py-2 text-gray-600">
+                    {children}
+                  </td>
+                ),
+              }}
+            >
+              {section.introduction}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
 
       {/* Problems List */}
