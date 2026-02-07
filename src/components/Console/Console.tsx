@@ -120,16 +120,16 @@ export default function Console({
   const showTestsTab = testCases && visibleTestCount > 0;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg h-full flex flex-col shadow-sm">
-      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-200 bg-gray-50">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg h-full flex flex-col shadow-sm">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex">
           {showTestsTab && (
             <button
               onClick={() => setActiveTab('tests')}
               className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
                 activeTab === 'tests'
-                  ? 'text-primary-600 bg-white border-t border-l border-r border-gray-200 -mb-px'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'text-primary-600 bg-white dark:bg-gray-900 border-t border-l border-r border-gray-200 dark:border-gray-700 -mb-px'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               Tests ({visibleTestCount})
@@ -139,8 +139,8 @@ export default function Console({
             onClick={() => setActiveTab('output')}
             className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
               activeTab === 'output'
-                ? 'text-primary-600 bg-white border-t border-l border-r border-gray-200 -mb-px'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-primary-600 bg-white dark:bg-gray-900 border-t border-l border-r border-gray-200 dark:border-gray-700 -mb-px'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             Output
@@ -149,7 +149,7 @@ export default function Console({
         {isLoading && (
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
-            <span className="text-xs text-gray-500">Running...</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Running...</span>
           </div>
         )}
       </div>
