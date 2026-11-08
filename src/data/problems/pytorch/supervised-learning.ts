@@ -437,6 +437,13 @@ def logistic_regression(X, y, learning_rate=0.1, iterations=1000):
         hidden: false,
       },
       {
+        id: '4',
+        description: 'One step from zero init (sigmoid(0) = 0.5 gradient)',
+        input: '(lambda r: (r[0].tolist(), r[1]))(logistic_regression(torch.tensor([[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]), torch.tensor([0.0, 0.0, 0.0, 1.0]), 0.5, 1))',
+        expected: '([0.0, 0.0], -0.125)',
+        hidden: false,
+      },
+      {
         id: '2',
         description: 'OR data',
         input: '(lambda r: bool(torch.allclose(r[0], torch.tensor([7.2375, 7.2375]), atol=1e-3) and abs(r[1] - (-3.1461)) < 1e-3))(logistic_regression(torch.tensor([[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]), torch.tensor([0.0, 1.0, 1.0, 1.0]), 0.5, 1000))',

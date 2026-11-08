@@ -1715,12 +1715,36 @@ def round(input, decimals=0):
 def clamp(input, min=None, max=None):
     x = _tens(input)
     if isinstance(min, Tensor) or isinstance(max, Tensor):
-        out = x
-        if min is not None:
-            out = maximum(out, min)
-        if max is not None:
-            out = minimum(out, max)
-        return out
+        # Tensor bounds. Like torch (clamp_backward_min_max), the input receives the full gradient
+        # wherever min <= x <= max (boundary inclusive); min gets it where x < min, max where x > max.
+        # Composing maximum/minimum would split ties 0.5/0.5 instead.
+        bounds = [v for v in (min, max) if v is not None]
+        dt = _promote(x, *bounds)
+        A = _arr(x, dt)
+        lo = _arr(min, dt) if min is not None else None
+        hi = _arr(max, dt) if max is not None else None
+        out = A
+        if lo is not None:
+            out = np.maximum(out, lo)
+        if hi is not None:
+            out = np.minimum(out, hi)
+        out = np.asarray(out, dtype=dt)
+        shape = out.shape
+        ge_lo = (A >= lo) if lo is not None else True
+        le_hi = (A <= hi) if hi is not None else True
+
+        def back(g):
+            g = np.broadcast_to(g, shape)
+            gx = g * (ge_lo & le_hi)
+            res = [gx]
+            if min is not None:
+                m = ~ge_lo if hi is None else (~ge_lo & (hi > lo))
+                res.append(g * m)
+            if max is not None:
+                res.append(g * ((A > hi) | ((lo > hi) if lo is not None else False)))
+            return tuple(res)
+        parents = (x,) + tuple(_tparent(v) for v in (min, max) if v is not None)
+        return _result(out, parents, back if _is_float(dt) else None, 'ClampBackward1')
     if min is None and max is None:
         raise RuntimeError("torch.clamp: At least one of 'min' or 'max' must not be None")
     dt = _promote(x, *(v for v in (min, max) if v is not None))
@@ -4130,12 +4154,29 @@ def _F_binary_cross_entropy_with_logits(input, target, weight=None, size_average
     if tgt.shape != x.shape:
         raise ValueError(f"Target size ({tgt.shape}) must be the same as input size ({x.shape})")
     tgt = tgt.to(x.dtype)
-    sp = _F_softplus(-x.abs(), 1.0, 1e30) + clamp(-x, min=0)  # log(1 + exp(-x)) computed stably
-    if pos_weight is None:
-        loss = (1 - tgt) * x + sp
-    else:
-        lw = 1 + (_tens(pos_weight) - 1) * tgt
-        loss = (1 - tgt) * x + lw * sp
+    # Elementwise loss as one fused node with an analytic backward. Composing it from abs/clamp ops
+    # would differentiate log(1 + exp(-x)) = softplus(-|x|) + relu(-x) through abs, whose subgradient
+    # at x == 0 is 0, giving d/dx = -y instead of sigmoid(0) - y exactly at x == 0 (e.g. zero init).
+    #   loss = (1 - y) x + lw log(1 + exp(-x)),  lw = 1 + (pos_weight - 1) y   (lw = 1 without pos_weight)
+    #   d/dx = (1 - y) - lw sigmoid(-x),   d/dy = -x - (pos_weight - 1) log(1 + exp(-x))
+    pw = None if pos_weight is None else _tens(pos_weight).to(x.dtype)
+    X, Y = x._data, tgt._data
+    PW = None if pw is None else pw._data
+    with np.errstate(over='ignore'):
+        sp_np = np.logaddexp(0, -X)  # log(1 + exp(-x)), stable
+        sig_neg = _UNARY['sigmoid'][0](-X)
+    LW = 1 if PW is None else 1 + (PW - 1) * Y
+    data = np.asarray((1 - Y) * X + LW * sp_np, dtype=X.dtype)
+    out_shape = data.shape
+
+    def back(g):
+        g = np.broadcast_to(g, out_shape)
+        res = [g * ((1 - Y) - LW * sig_neg), g * (-X - (0 if PW is None else (PW - 1)) * sp_np)]
+        if PW is not None:
+            res.append(g * Y * sp_np)
+        return tuple(res)
+    parents = (x, tgt) if pw is None else (x, tgt, pw)
+    loss = _result(data, parents, back, 'BinaryCrossEntropyWithLogitsBackward0')
     if weight is not None:
         loss = loss * weight
     return _reduce(loss, reduction)

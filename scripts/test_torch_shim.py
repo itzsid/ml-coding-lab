@@ -961,6 +961,8 @@ def functional_ops():
          (R(6), C(np.array([0, 1, 1, 0, 1, 0], dtype=np.float32)))),
         ('F.bce_with_logits pos_weight', lambda L, x, t: L.nn.functional.binary_cross_entropy_with_logits(
             x, t, pos_weight=L.tensor([2.0, 0.5, 1.0])), (R(2, 3), C(np.array([[0, 1, 1], [1, 0, 1]], dtype=np.float32)))),
+        ('F.bce_with_logits at zero', lambda L, x, t: L.nn.functional.binary_cross_entropy_with_logits(x, t),
+         (C(np.zeros(4, dtype=np.float32), grad=True), C(np.array([0, 0, 0, 1], dtype=np.float32)))),
         ('F.kl_div', lambda L, a, b: (L.nn.functional.kl_div(a.log_softmax(-1), b.softmax(-1), reduction='batchmean'),
                                       L.nn.functional.kl_div(a.log_softmax(-1), b.log_softmax(-1), reduction='sum',
                                                              log_target=True)), (R(3, 4), R(3, 4))),
@@ -1570,6 +1572,70 @@ def misc():
     install_checks()
 
 
+def boundary_grads():
+    """Gradients exactly at kinks/boundaries, where finite differences can't arbitrate (regressions)."""
+    print('boundary gradients')
+    F = lambda L: L.nn.functional  # noqa: E731
+
+    def bce_zero(L, **kw):
+        z = L.zeros(4, requires_grad=True)
+        F(L).binary_cross_entropy_with_logits(z, L.tensor([0., 0, 0, 1]), **kw).backward()
+        return z.grad
+    # d/dz = (sigmoid(0) - y) / 4 at z == 0 (was [0, 0, 0, -0.25]: abs() has subgradient 0 at 0)
+    behaviour('F.bce_with_logits grad at z == 0', bce_zero,
+              ('ok', ('tensor', 'torch.float32', (4,), (0.125, 0.125, 0.125, -0.125))))
+    behaviour('F.bce_with_logits grad at z == 0 pos_weight',
+              lambda L: bce_zero(L, pos_weight=L.tensor([3.0])),
+              ('ok', ('tensor', 'torch.float32', (4,), (0.125, 0.125, 0.125, -0.375))))
+    behaviour('F.bce_with_logits sum grad at z == 0',
+              lambda L: bce_zero(L, reduction='sum'),
+              ('ok', ('tensor', 'torch.float32', (4,), (0.5, 0.5, 0.5, -0.5))))
+
+    def logreg_one_step(L):
+        # logistic regression on AND data from zero init, one GD step with lr=0.5
+        X = L.tensor([[0., 0], [0, 1], [1, 0], [1, 1]])
+        y = L.tensor([0., 0, 0, 1])
+        w = L.zeros(2, requires_grad=True)
+        b = L.zeros(1, requires_grad=True)
+        F(L).binary_cross_entropy_with_logits(X @ w + b, y).backward()
+        with L.no_grad():
+            w -= 0.5 * w.grad
+            b -= 0.5 * b.grad
+        return w, b
+    behaviour('logistic regression first step from zero init', logreg_one_step,
+              ('ok', (('tensor', 'torch.float32', (2,), (0.0, 0.0)),
+                      ('tensor', 'torch.float32', (1,), (-0.125,)))))
+
+    def clamp_grad(L, lo, hi):
+        x = L.tensor([-1., 0., 0.5, 1., 2.], requires_grad=True)
+        L.clamp(x, lo, hi).sum().backward()
+        return x.grad
+    # torch: input gets the gradient for min <= x <= max, boundaries included
+    behaviour('clamp scalar bounds grad at boundary', lambda L: clamp_grad(L, 0.0, 1.0),
+              ('ok', ('tensor', 'torch.float32', (5,), (0.0, 1.0, 1.0, 1.0, 0.0))))
+    behaviour('clamp min-only grad at boundary', lambda L: clamp_grad(L, 0.0, None),
+              ('ok', ('tensor', 'torch.float32', (5,), (0.0, 1.0, 1.0, 1.0, 1.0))))
+
+    def clamp_tensor_grad(L):
+        x = L.tensor([-1., 0., 0.5, 1., 2.], requires_grad=True)
+        lo = L.tensor([0., 0., 0., 0., 3.], requires_grad=True)
+        hi = L.tensor(1.0, requires_grad=True)
+        L.clamp(x, min=lo, max=hi).sum().backward()
+        return x.grad, lo.grad, hi.grad
+    # ties go entirely to the input (not split 0.5/0.5 as maximum/minimum do); min > max -> max wins
+    behaviour('clamp tensor bounds grad at boundary', clamp_tensor_grad,
+              ('ok', (('tensor', 'torch.float32', (5,), (0.0, 1.0, 1.0, 1.0, 0.0)),
+                      ('tensor', 'torch.float32', (5,), (1.0, 0.0, 0.0, 0.0, 0.0)),
+                      ('tensor', 'torch.float32', (), 1.0))))
+    behaviour('clamp tensor min-only grad at boundary', lambda L: (lambda x, lo: (
+        L.clamp(x, min=lo).sum().backward(), (x.grad, lo.grad))[-1])(
+            L.tensor([-1., 0., 1.], requires_grad=True), L.zeros(3, requires_grad=True)),
+        ('ok', (('tensor', 'torch.float32', (3,), (0.0, 1.0, 1.0)),
+                ('tensor', 'torch.float32', (3,), (1.0, 0.0, 0.0)))))
+    behaviour('clamp tensor bounds int', lambda L: L.clamp(L.tensor([1, 5, 9]), min=L.tensor(3), max=L.tensor(7)),
+              ('ok', ('tensor', 'torch.int64', (3,), (3, 5, 7))))
+
+
 def _raises(fn, exc):
     try:
         fn()
@@ -1647,7 +1713,7 @@ def main():
     mode = f'real torch {T.__version__}' if T is not None else 'finite differences + hand-computed values'
     print(f'torch shim tests: comparing against {mode}\n')
     for section in (creation_and_dtype, math_ops, reduction_ops, shape_ops, linalg_ops, autograd_features,
-                    functional_ops, modules, init_fns, optimizers, distributions, misc):
+                    functional_ops, modules, init_fns, optimizers, distributions, boundary_grads, misc):
         section()
     total = RESULTS['pass'] + RESULTS['fail']
     print(f"\nSummary ({mode}): {RESULTS['pass']}/{total} checks passed, {RESULTS['fail']} failed")
