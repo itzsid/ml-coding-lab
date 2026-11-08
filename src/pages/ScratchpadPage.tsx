@@ -21,7 +21,7 @@ print(f"Mean: {np.mean(arr)}")
 `;
 
 export default function ScratchpadPage() {
-  const { isLoading, isReady, output, runCode, clearOutput } = usePyodide();
+  const { isLoading, isReady, output, runCode, stop, clearOutput } = usePyodide();
   const { isDark } = useDarkMode();
   const [code, setCode] = useState('');
   const [isRunning, setIsRunning] = useState(false);
@@ -65,7 +65,7 @@ export default function ScratchpadPage() {
   }, [isReady, code, runCode, clearOutput]);
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col -m-6">
+    <div className="h-[calc(100dvh-4rem)] flex flex-col -m-6">
       <SEO
         title="Python Scratchpad"
         description="Free Python playground with NumPy pre-loaded. Run Python code directly in your browser - no setup required. Practice machine learning code instantly."
@@ -106,13 +106,24 @@ export default function ScratchpadPage() {
         {/* Action Bar */}
         <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-dark-900 border-b border-gray-200 dark:border-dark-500">
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleRunCode}
-              disabled={!isReady || isRunning}
-              className="px-4 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isRunning ? 'Running...' : 'Run Code'}
-            </button>
+            {isRunning ? (
+              <button
+                onClick={stop}
+                className="px-4 py-1.5 bg-red-500/90 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+                title="Stop running code"
+              >
+                <span className="w-2.5 h-2.5 bg-white rounded-sm" aria-hidden="true" />
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={handleRunCode}
+                disabled={!isReady}
+                className="px-4 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Run Code
+              </button>
+            )}
             <button
               onClick={handleReset}
               className="px-4 py-1.5 bg-gray-200 dark:bg-dark-600 text-gray-700 dark:text-dark-200 text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-dark-500 transition-colors"

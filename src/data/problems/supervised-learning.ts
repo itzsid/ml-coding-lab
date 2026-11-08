@@ -148,6 +148,13 @@ def binary_cross_entropy(y_true, y_pred):
         expected: '0.1446',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Mixed confident/unsure predictions',
+        input: '([0, 1, 1, 0], [0.2, 0.7, 0.9, 0.4])',
+        expected: '0.299',
+        hidden: true,
+      },
     ],
     hints: [
       'Clip predictions for numerical stability',
@@ -570,6 +577,13 @@ def logistic_regression(X, y, learning_rate=0.1, iterations=1000):
         input: '(lambda r: bool(np.allclose(r[0], [6.0141, 6.0141], atol=1e-3) and np.isclose(r[1], -9.1984, atol=1e-3)))(logistic_regression(np.array([[0, 0], [0, 1], [1, 0], [1, 1]]), np.array([0, 0, 0, 1]), 0.5, 1000))',
         expected: 'True',
         hidden: false,
+      },
+      {
+        id: '2',
+        description: 'Learns a separable 1D problem',
+        input: '(lambda r: bool(r[0][0] > 0 and np.all((np.array([[-2.0], [-1.0], [1.0], [2.0]]) @ r[0] + r[1] > 0) == np.array([False, False, True, True]))))(logistic_regression(np.array([[-2.0], [-1.0], [1.0], [2.0]]), np.array([0, 0, 1, 1])))',
+        expected: 'True',
+        hidden: true,
       },
     ],
     hints: [

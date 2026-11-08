@@ -152,6 +152,13 @@ def advanced_indexing(arr: np.ndarray) -> dict:
         expected: '[[7, 8, 9], [12, 13, 14]]',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Diagonal and reversed rows on a 4x5 array',
+        input: '(lambda r: (r["diagonal"].tolist(), r["reversed"].tolist()[0], r["col_2"].tolist()))(advanced_indexing(np.arange(20).reshape(4, 5) * 2))',
+        expected: '([0, 12, 24, 36], [30, 32, 34, 36, 38], [4, 14, 24, 34])',
+        hidden: true,
+      },
     ],
     hints: [
       'arr[1] or arr[1, :] gets row 1',
@@ -236,6 +243,13 @@ def broadcasting_ops(arr: np.ndarray, bias: np.ndarray, scale: np.ndarray) -> di
         input: 'broadcasting_ops(np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]]), np.array([1,1,1,1]), np.ones((3,1)))["biased"].shape',
         expected: '(3, 4)',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Scaled and column-centered values',
+        input: '(lambda r: (r["scaled"].tolist(), r["col_centered"].tolist()))(broadcasting_ops(np.array([[1.0, 2.0], [3.0, 6.0]]), np.array([0.5, -0.5]), np.array([[2.0], [10.0]])))',
+        expected: '([[2.0, 4.0], [30.0, 60.0]], [[-1.0, -2.0], [1.0, 2.0]])',
+        hidden: true,
       },
     ],
     hints: [
@@ -330,6 +344,13 @@ def compute_aggregations(arr: np.ndarray) -> dict:
         expected: '[6, 15]',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Stats on a 2x3 array with negatives',
+        input: '(lambda r: (round(float(r["global_std"]), 4), r["col_mean"].tolist(), tuple(int(i) for i in r["argmax"]), tuple(int(i) for i in r["argmin"])))(compute_aggregations(np.array([[3.0, -1.0, 2.0], [0.5, 4.0, -2.0]])))',
+        expected: '(2.1295, [1.75, 1.5, 0.0], (1, 1), (1, 2))',
+        hidden: true,
+      },
     ],
     hints: [
       'arr.mean() computes global mean',
@@ -422,6 +443,13 @@ def reshape_transpose(arr: np.ndarray) -> dict:
         input: 'reshape_transpose(np.arange(24))["arr_3d"].shape',
         expected: '(2, 3, 4)',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Values, not just shapes',
+        input: '(lambda r: (r["arr_2d_transposed"][0].tolist(), r["arr_3d_swapped"].shape, r["arr_flat"][:5].tolist()))(reshape_transpose(np.arange(24)))',
+        expected: '([0, 6, 12, 18], (4, 3, 2), [0, 1, 2, 3, 4])',
+        hidden: true,
       },
     ],
     hints: [

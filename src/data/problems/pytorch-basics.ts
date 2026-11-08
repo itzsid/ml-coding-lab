@@ -76,6 +76,13 @@ def create_tensors() -> dict:
         expected: '(2, 3)',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Values of eye, arange, linspace, full',
+        input: '(lambda r: (r["eye"].tolist(), r["arange"].tolist(), r["linspace"].tolist(), r["full"].tolist()))(create_tensors())',
+        expected: '([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0.0, 0.25, 0.5, 0.75, 1.0], [[7.0, 7.0, 7.0], [7.0, 7.0, 7.0]])',
+        hidden: true,
+      },
     ],
     hints: [
       'np.zeros((3, 4)) for 3x4 zeros',
@@ -169,6 +176,13 @@ def tensor_ops(x: np.ndarray, y: np.ndarray) -> dict:
         input: 'tensor_ops(np.array([[1,2,3],[4,5,6]]), np.array([[1,1,1],[2,2,2]]))["mean"]',
         expected: '3.5',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Reductions, argmax and reshapes',
+        input: '(lambda r: (r["sum_axis0"].tolist(), r["sum_axis1"].tolist(), int(r["argmax"]), r["transpose"].shape, r["unsqueeze"].shape))(tensor_ops(np.array([[1, 5, 3], [4, 2, 6]]), np.array([[1, 1, 1], [2, 2, 2]])))',
+        expected: '([5, 7, 9], [9, 12], 5, (3, 2), (1, 2, 3))',
+        hidden: true,
       },
     ],
     hints: [
@@ -284,6 +298,13 @@ def linear_layer_gradients(X: np.ndarray, W: np.ndarray, b: np.ndarray,
         input: 'compute_gradients(2.0)["y"]',
         expected: '11.0',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Linear layer gradients match finite differences',
+        input: '(lambda X, W, b, G: (lambda r: bool(np.allclose(r["grad_W"], X.T @ G) and np.allclose(r["grad_b"], G.sum(0)) and np.allclose(r["grad_X"], G @ W.T)))(linear_layer_gradients(X, W, b, G)))(np.random.randn(4, 3), np.random.randn(3, 2), np.random.randn(2), np.random.randn(4, 2))',
+        expected: 'True',
+        hidden: true,
       },
     ],
     hints: [
@@ -417,6 +438,13 @@ def create_mlp(input_dim: int, hidden_dim: int, output_dim: int):
         expected: '(4, 5)',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Linear computes x @ W + b with its own parameters',
+        input: '(lambda l, x: bool(np.allclose(l.forward(x), x @ l.parameters()[0] + l.parameters()[1]) or np.allclose(l.forward(x), x @ l.parameters()[0].T + l.parameters()[1])))(Linear(3, 2), np.random.randn(5, 3))',
+        expected: 'True',
+        hidden: true,
+      },
     ],
     hints: [
       'Initialize W with np.random.randn() * 0.01',
@@ -543,6 +571,13 @@ def binary_cross_entropy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
         input: 'mse_loss(np.array([1.0, 2.0, 3.0]), np.array([1.0, 2.0, 4.0]))',
         expected: '0.333333',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Cross-entropy on a batch and BCE',
+        input: '(round(cross_entropy_loss(np.array([[1.0, 2.0, 3.0], [1.0, 1.0, 1.0]]), np.array([2, 0])), 4), round(binary_cross_entropy(np.array([0.9, 0.2]), np.array([1.0, 0.0])), 4))',
+        expected: '1.215542',
+        hidden: true,
       },
     ],
     hints: [

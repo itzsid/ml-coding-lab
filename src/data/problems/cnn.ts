@@ -69,6 +69,13 @@ def conv2d(image, kernel):
         expected: '[[5, 5], [5, 5]]',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Asymmetric kernel on a 4x4 image',
+        input: '([[1, 2, 3, 0], [4, 1, 0, 2], [0, 5, 1, 3], [2, 0, 6, 1]], [[1, 0], [2, -1]])',
+        expected: '[[8, 4, 1], [-1, 10, -1], [4, -1, 12]]',
+        hidden: true,
+      },
     ],
     hints: [
       'Use nested loops to slide the kernel over the image',

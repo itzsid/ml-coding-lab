@@ -381,6 +381,13 @@ def transformer_encoder(x, num_layers=2, d_model=64, num_heads=8, d_ff=256):
         expected: 'True',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Layer norm output is normalized per position',
+        input: '(lambda x: (lambda out: bool(np.allclose(out.mean(-1), 0, atol=1e-5) and np.allclose(out.std(-1), 1, atol=1e-2)))(layer_norm(x, np.ones(16), np.zeros(16))))(np.random.randn(2, 5, 16) * 3 + 1)',
+        expected: 'True',
+        hidden: true,
+      },
     ],
     hints: [
       'Attention: softmax(QK^T / sqrt(d_k)) @ V',
@@ -621,6 +628,13 @@ class VAE:
         input: '(lambda: (vae := VAE(784, 256, 20), x := np.random.randn(4, 784), out := vae.forward(x), loss := vae.compute_loss(x, out["x_recon"], out["mu"], out["log_var"]), bool(loss["kl_loss"] >= 0))[-1])()',
         expected: 'True',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Reparameterize uses mu and std (eps=0 limit)',
+        input: '(lambda v: bool(np.allclose(v.reparameterize(np.full((2, 3), 1.5), np.full((2, 3), -1e9)), 1.5)))(VAE(8, 4, 3))',
+        expected: 'True',
+        hidden: true,
       },
     ],
     hints: [
@@ -1198,6 +1212,13 @@ class DiffusionModel:
         expected: 'True',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Forward diffusion matches the closed form',
+        input: '(lambda dm, x0: (lambda r: bool(np.allclose(r[0], np.sqrt(dm.get_noise_schedule()["alpha_bars"][10]) * x0 + np.sqrt(1 - dm.get_noise_schedule()["alpha_bars"][10]) * r[1])))(dm.forward_diffusion(x0, 10)))(DiffusionModel(100), np.random.randn(3, 4))',
+        expected: 'True',
+        hidden: true,
+      },
     ],
     hints: [
       'betas = np.linspace(beta_start, beta_end, T)',
@@ -1421,6 +1442,13 @@ def test_cnn():
         input: 'maxpool2d(np.random.randn(2, 32, 8, 8), pool_size=2).shape',
         expected: '(2, 32, 4, 4)',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'conv2d values match a direct computation',
+        input: '(lambda x, k: bool(np.isclose(conv2d(x, k, np.array([0.5]))[0, 0, 1, 2], np.sum(x[0, :, 1:4, 2:5] * k[0]) + 0.5)))(np.random.randn(1, 2, 6, 6), np.random.randn(1, 2, 3, 3))',
+        expected: 'True',
+        hidden: true,
       },
     ],
     hints: [

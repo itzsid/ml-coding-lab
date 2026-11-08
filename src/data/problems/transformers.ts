@@ -68,6 +68,13 @@ def scaled_dot_product_attention(Q, K, V):
         expected: 'True',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Matches a reference implementation',
+        input: '(lambda Q, K, V: (lambda out, w: bool(np.allclose(w, (lambda s: np.exp(s - s.max(-1, keepdims=True)) / np.exp(s - s.max(-1, keepdims=True)).sum(-1, keepdims=True))(Q @ K.T / np.sqrt(4))) and np.allclose(out, w @ V)))(*scaled_dot_product_attention(Q, K, V)))(np.random.randn(3, 4), np.random.randn(5, 4), np.random.randn(5, 2))',
+        expected: 'True',
+        hidden: true,
+      },
     ],
     hints: [
       'Compute scores = Q @ K.T',
@@ -155,6 +162,13 @@ def multi_head_attention(Q, K, V, num_heads):
         input: 'multi_head_attention(np.random.randn(4, 64), np.random.randn(4, 64), np.random.randn(4, 64), 8).shape',
         expected: '(4, 64)',
         hidden: false,
+      },
+      {
+        id: '2',
+        description: 'One head equals plain attention',
+        input: '(lambda Q, K, V: bool(np.allclose(multi_head_attention(Q, K, V, 1), (lambda s: (np.exp(s - s.max(-1, keepdims=True)) / np.exp(s - s.max(-1, keepdims=True)).sum(-1, keepdims=True)) @ V)(Q @ K.T / np.sqrt(8)))))(np.random.randn(4, 8), np.random.randn(4, 8), np.random.randn(4, 8))',
+        expected: 'True',
+        hidden: true,
       },
     ],
     hints: [

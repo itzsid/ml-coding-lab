@@ -71,6 +71,13 @@ def einsum_basics(arr: np.ndarray) -> dict:
         expected: 'True',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Sums and diagonal of a 3x3 matrix',
+        input: '(lambda r: (int(r["sum_all"]), r["row_sum"].tolist(), r["col_sum"].tolist(), r["diagonal"].tolist()))(einsum_basics(np.arange(9).reshape(3, 3)))',
+        expected: '(36, [3, 12, 21], [9, 12, 15], [0, 4, 8])',
+        hidden: true,
+      },
     ],
     hints: [
       "'ij->' sums all elements",
@@ -158,6 +165,13 @@ def einsum_matrix_ops(A: np.ndarray, B: np.ndarray, v: np.ndarray) -> dict:
         expected: 'True',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'All ops match NumPy on 3x3 inputs',
+        input: '(lambda A, B, v: (lambda r: bool(np.allclose(r["matmul"], A @ B) and np.allclose(r["matvec"], A @ v) and np.allclose(r["outer_product"], np.outer(v, v)) and np.allclose(r["hadamard"], A * A) and np.isclose(r["trace"], np.trace(A)) and np.isclose(r["frobenius"], np.sum(A * A))))(einsum_matrix_ops(A, B, v)))(np.random.randn(3, 3), np.random.randn(3, 3), np.random.randn(3))',
+        expected: 'True',
+        hidden: true,
+      },
     ],
     hints: [
       "'ik,kj->ij' contracts over k (matrix multiply)",
@@ -243,6 +257,13 @@ def einsum_batch_ops(Q: np.ndarray, K: np.ndarray, V: np.ndarray) -> dict:
         input: 'einsum_batch_ops(np.ones((2, 4, 8)), np.ones((2, 6, 8)), np.ones((2, 6, 16)))["output"].shape',
         expected: '(2, 4, 16)',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Attention weights and output match matmul',
+        input: '(lambda Q, K, V: (lambda r: bool(np.allclose(r["scores"], Q @ K.transpose(0, 2, 1)) and np.allclose(r["attention_weights"].sum(-1), 1.0) and np.allclose(r["output"], r["attention_weights"] @ V)))(einsum_batch_ops(Q, K, V)))(np.random.randn(2, 3, 4), np.random.randn(2, 5, 4), np.random.randn(2, 5, 6))',
+        expected: 'True',
+        hidden: true,
       },
     ],
     hints: [
@@ -453,6 +474,13 @@ def einsum_equivalence(A: np.ndarray, B: np.ndarray) -> dict:
         input: 'bool(np.allclose(einsum_equivalence(np.array([[1.0,2.0],[3.0,4.0]]), np.array([[5.0,6.0],[7.0,8.0]]))["results"]["matmul"]["einsum"], np.array([[19.0,22.0],[43.0,50.0]])))',
         expected: 'True',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Equivalences hold for random inputs',
+        input: 'bool(einsum_equivalence(np.random.randn(3, 4), np.random.randn(4, 3))["all_match"])',
+        expected: 'True',
+        hidden: true,
       },
     ],
     hints: [

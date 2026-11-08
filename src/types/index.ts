@@ -25,6 +25,20 @@ export interface TestResult {
   hidden: boolean;
 }
 
+export type Language = 'numpy' | 'pytorch';
+
+/** A solution track for a problem in another framework (e.g. PyTorch). */
+export interface LanguageVariant {
+  starterCode: string;
+  solution: string;
+  /** Expression-based tests only (they must call the function explicitly). */
+  testCases: TestCase[];
+  /** Optional framework-specific hints; falls back to the problem's hints. */
+  hints?: string[];
+  /** Optional short note shown above the editor, e.g. which torch APIs are allowed. */
+  note?: string;
+}
+
 export interface Problem {
   id: string;
   title: string;
@@ -36,6 +50,8 @@ export interface Problem {
   testCases: TestCase[];
   hints: string[];
   solution: string;
+  /** PyTorch track, attached from src/data/problems/pytorch/. */
+  pytorch?: LanguageVariant;
 }
 
 export interface Section {
@@ -50,7 +66,14 @@ export interface Section {
 export interface ProblemProgress {
   status: ProblemStatus;
   lastAttempt?: string;
+  /** Saved NumPy-track code (kept under this name for backward compatibility). */
   code?: string;
+  /** Saved code for other tracks, e.g. { pytorch: '...' }. */
+  codes?: Partial<Record<Language, string>>;
+  /** Track(s) the problem was solved in. */
+  solvedIn?: Language[];
+  /** The reference solution was revealed before/after solving. */
+  solutionViewed?: boolean;
 }
 
 export interface SectionProgress {

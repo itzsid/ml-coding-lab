@@ -1,13 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Progress, ProblemStatus } from '../types';
+import { Progress, ProblemStatus, Language } from '../types';
 
 const STORAGE_KEY = 'ml-interview-progress';
 
 interface ProgressContextType {
   progress: Progress;
-  updateProblemStatus: (sectionId: string, problemId: string, status: ProblemStatus) => void;
-  saveProblemCode: (sectionId: string, problemId: string, code: string) => void;
-  getProblemProgress: (sectionId: string, problemId: string) => { status: ProblemStatus; code?: string };
+  updateProblemStatus: (sectionId: string, problemId: string, status: ProblemStatus, language?: Language) => void;
+  saveProblemCode: (sectionId: string, problemId: string, code: string, language?: Language) => void;
+  markSolutionViewed: (sectionId: string, problemId: string) => void;
+  getProblemProgress: (sectionId: string, problemId: string) => {
+    status: ProblemStatus;
+    code?: string;
+    codes: Partial<Record<Language, string>>;
+    solvedIn: Language[];
+    solutionViewed: boolean;
+  };
   getSectionProgress: (sectionId: string, totalProblems: number) => number;
   getOverallProgress: (sections: { id: string; problemCount: number }[]) => number;
   resetProgress: () => void;
@@ -25,33 +32,73 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   }, [progress]);
 
-  const updateProblemStatus = useCallback((sectionId: string, problemId: string, status: ProblemStatus) => {
-    setProgress(prev => ({
-      ...prev,
-      [sectionId]: {
-        ...prev[sectionId],
-        [problemId]: {
-          ...prev[sectionId]?.[problemId],
-          status,
-          lastAttempt: new Date().toISOString(),
+  const updateProblemStatus = useCallback((
+    sectionId: string,
+    problemId: string,
+    status: ProblemStatus,
+    language?: Language
+  ) => {
+    setProgress(prev => {
+      const current = prev[sectionId]?.[problemId];
+      const solvedIn = current?.solvedIn ?? [];
+      return {
+        ...prev,
+        [sectionId]: {
+          ...prev[sectionId],
+          [problemId]: {
+            ...current,
+            status,
+            ...(status === 'completed' && language && !solvedIn.includes(language)
+              ? { solvedIn: [...solvedIn, language] }
+              : {}),
+            lastAttempt: new Date().toISOString(),
+          },
         },
-      },
-    }));
+      };
+    });
   }, []);
 
-  const saveProblemCode = useCallback((sectionId: string, problemId: string, code: string) => {
-    setProgress(prev => ({
-      ...prev,
-      [sectionId]: {
-        ...prev[sectionId],
-        [problemId]: {
-          ...prev[sectionId]?.[problemId],
-          status: prev[sectionId]?.[problemId]?.status || 'in_progress',
-          code,
-          lastAttempt: new Date().toISOString(),
+  const saveProblemCode = useCallback((
+    sectionId: string,
+    problemId: string,
+    code: string,
+    language: Language = 'numpy'
+  ) => {
+    setProgress(prev => {
+      const current = prev[sectionId]?.[problemId];
+      return {
+        ...prev,
+        [sectionId]: {
+          ...prev[sectionId],
+          [problemId]: {
+            ...current,
+            status: current?.status || 'in_progress',
+            ...(language === 'numpy'
+              ? { code }
+              : { codes: { ...current?.codes, [language]: code } }),
+            lastAttempt: new Date().toISOString(),
+          },
         },
-      },
-    }));
+      };
+    });
+  }, []);
+
+  const markSolutionViewed = useCallback((sectionId: string, problemId: string) => {
+    setProgress(prev => {
+      const current = prev[sectionId]?.[problemId];
+      if (current?.solutionViewed) return prev;
+      return {
+        ...prev,
+        [sectionId]: {
+          ...prev[sectionId],
+          [problemId]: {
+            ...current,
+            status: current?.status || 'in_progress',
+            solutionViewed: true,
+          },
+        },
+      };
+    });
   }, []);
 
   const getProblemProgress = useCallback((sectionId: string, problemId: string) => {
@@ -59,6 +106,9 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return {
       status: problemProgress?.status || 'not_started',
       code: problemProgress?.code,
+      codes: problemProgress?.codes ?? {},
+      solvedIn: problemProgress?.solvedIn ?? [],
+      solutionViewed: problemProgress?.solutionViewed ?? false,
     };
   }, [progress]);
 
@@ -101,6 +151,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
         progress,
         updateProblemStatus,
         saveProblemCode,
+        markSolutionViewed,
         getProblemProgress,
         getSectionProgress,
         getOverallProgress,

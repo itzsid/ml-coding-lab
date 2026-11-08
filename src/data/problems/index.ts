@@ -1,4 +1,5 @@
 import { Problem } from '../../types';
+import { pytorchVariants } from './pytorch';
 import { pythonBasicsProblems } from './python-basics';
 import { dataPreprocessingProblems } from './data-preprocessing';
 import { supervisedLearningProblems } from './supervised-learning';
@@ -15,7 +16,7 @@ import { pytorchBasicsProblems } from './pytorch-basics';
 import { e2eImplementationProblems } from './e2e-implementations';
 import { reinforcementLearningProblems } from './reinforcement-learning';
 
-export const allProblems: Problem[] = [
+const baseProblems: Problem[] = [
   ...pythonBasicsProblems,
   ...dataPreprocessingProblems,
   ...supervisedLearningProblems,
@@ -32,6 +33,11 @@ export const allProblems: Problem[] = [
   ...e2eImplementationProblems,
   ...reinforcementLearningProblems,
 ];
+
+// Attach PyTorch tracks (kept in ./pytorch so they can evolve independently).
+export const allProblems: Problem[] = baseProblems.map(p =>
+  pytorchVariants[p.id] ? { ...p, pytorch: pytorchVariants[p.id] } : p
+);
 
 export function getProblemById(id: string): Problem | undefined {
   return allProblems.find(p => p.id === id);

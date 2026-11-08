@@ -7,9 +7,11 @@ import { useDarkMode } from '../../hooks/useDarkMode';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
+  /** Show the curriculum menu button on desktop too (pages without a sidebar). */
+  showMenuOnDesktop?: boolean;
 }
 
-export default function Header({ onMenuToggle }: HeaderProps) {
+export default function Header({ onMenuToggle, showMenuOnDesktop = false }: HeaderProps) {
   const { getOverallProgress } = useProgress();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const { isDark, toggle } = useDarkMode();
@@ -27,11 +29,11 @@ export default function Header({ onMenuToggle }: HeaderProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            {/* Hamburger menu - mobile only */}
+            {/* Hamburger menu - mobile, and desktop on full-width workspaces */}
             {onMenuToggle && (
               <button
                 onClick={onMenuToggle}
-                className="lg:hidden p-2 -ml-2 text-gray-600 dark:text-dark-200 hover:text-gray-900 dark:hover:text-dark-100 hover:bg-gray-100 dark:hover:bg-dark-600 rounded-lg transition-colors"
+                className={`${showMenuOnDesktop ? '' : 'lg:hidden'} p-2 -ml-2 text-gray-600 dark:text-dark-200 hover:text-gray-900 dark:hover:text-dark-100 hover:bg-gray-100 dark:hover:bg-dark-600 rounded-lg transition-colors`}
                 aria-label="Toggle menu"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

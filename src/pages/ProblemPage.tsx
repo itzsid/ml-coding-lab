@@ -11,17 +11,29 @@ import ProblemDescription from '../components/ProblemView/ProblemDescription';
 import Examples from '../components/ProblemView/Examples';
 import Hints from '../components/ProblemView/Hints';
 import SEO from '../components/SEO/SEO';
-import { TestResult, TestCase } from '../types';
+import { TestResult, TestCase, Language } from '../types';
 import SuccessBanner from '../components/SuccessBanner/SuccessBanner';
 import { useDarkMode } from '../hooks/useDarkMode';
 
+const LANGUAGE_KEY = 'ml-lab-language';
+
+const LANGUAGE_LABELS: Record<Language, string> = { numpy: 'NumPy', pytorch: 'PyTorch' };
+
 export default function ProblemPage() {
   const { sectionId, problemId } = useParams<{ sectionId: string; problemId: string }>();
-  const { getProblemProgress, saveProblemCode, updateProblemStatus } = useProgress();
-  const { isLoading, isReady, output, runTests, clearOutput } = usePyodide();
+  const { getProblemProgress, saveProblemCode, updateProblemStatus, markSolutionViewed } = useProgress();
+  const { isLoading, isReady, output, runTests, stop, clearOutput } = usePyodide();
 
   const problem = problemId ? getProblemById(problemId) : undefined;
   const section = sections.find(s => s.id === sectionId);
+
+  // Solution track: NumPy (default) or PyTorch, remembered across problems.
+  const [language, setLanguage] = useState<Language>(() =>
+    localStorage.getItem(LANGUAGE_KEY) === 'pytorch' ? 'pytorch' : 'numpy'
+  );
+  const activeLanguage: Language = language === 'pytorch' && problem?.pytorch ? 'pytorch' : 'numpy';
+  const track = activeLanguage === 'pytorch' && problem?.pytorch ? problem.pytorch : problem;
+  const trackHints = (activeLanguage === 'pytorch' && problem?.pytorch?.hints) || problem?.hints || [];
 
   const [code, setCode] = useState('');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
@@ -33,6 +45,8 @@ export default function ProblemPage() {
     () => !localStorage.getItem('ml-lab-shortcut-hint-dismissed')
   );
   const [showCelebration, setShowCelebration] = useState(false);
+  // Shown when edited tests passed but the original tests didn't.
+  const [completionNote, setCompletionNote] = useState<string | null>(null);
   const wasCompletedRef = useRef(false);
   const [descriptionTab, setDescriptionTab] = useState<'description' | 'examples' | 'hints'>('description');
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
@@ -44,17 +58,26 @@ export default function ProblemPage() {
   // test completion), so without this guard each autosave would reset the
   // edited test cases and jump the description tab back to "Description".
   const loadedProblemKeyRef = useRef<string | null>(null);
+  const loadedProblemIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (problem && sectionId) {
-      const key = `${sectionId}/${problem.id}`;
+    if (problem && track && sectionId) {
+      const key = `${sectionId}/${problem.id}/${activeLanguage}`;
       if (loadedProblemKeyRef.current === key) return;
       loadedProblemKeyRef.current = key;
       const savedProgress = getProblemProgress(sectionId, problem.id);
-      setCode(savedProgress.code || problem.starterCode);
-      setEditableTestCases(problem.testCases);
-      setDescriptionTab('description');
+      const savedCode = activeLanguage === 'numpy' ? savedProgress.code : savedProgress.codes[activeLanguage];
+      setCode(savedCode || track.starterCode);
+      setEditableTestCases(track.testCases);
+      setTestResults([]);
+      setCompletionNote(null);
+      setResetKey(k => k + 1);
+      // Only a new problem (not a language switch) resets the left panel.
+      if (loadedProblemIdRef.current !== problem.id) {
+        loadedProblemIdRef.current = problem.id;
+        setDescriptionTab('description');
+      }
     }
-  }, [problem, sectionId, getProblemProgress]);
+  }, [problem, track, activeLanguage, sectionId, getProblemProgress]);
 
   // Track if problem was already completed to prevent repeat celebrations
   useEffect(() => {
@@ -64,15 +87,29 @@ export default function ProblemPage() {
     }
   }, [problem?.id, sectionId, getProblemProgress]);
 
-  // Auto-save code
+  // Auto-save code (per language). The ref guards against saving code from the
+  // previous track under the new one right after a language switch.
+  const codeTrackRef = useRef<string | null>(null);
   useEffect(() => {
-    if (code && problem && sectionId && code !== problem.starterCode) {
+    codeTrackRef.current = loadedProblemKeyRef.current;
+  }, [code]);
+  useEffect(() => {
+    if (code && problem && track && sectionId && code !== track.starterCode
+        && codeTrackRef.current === `${sectionId}/${problem.id}/${activeLanguage}`) {
       const timer = setTimeout(() => {
-        saveProblemCode(sectionId, problem.id, code);
+        saveProblemCode(sectionId, problem.id, code, activeLanguage);
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [code, problem, sectionId, saveProblemCode]);
+  }, [code, problem, track, activeLanguage, sectionId, saveProblemCode]);
+
+  const handleLanguageChange = useCallback((next: Language) => {
+    if (next === activeLanguage || !problem || !track || !sectionId) return;
+    // Flush unsaved edits for the current track before switching.
+    if (code && code !== track.starterCode) saveProblemCode(sectionId, problem.id, code, activeLanguage);
+    localStorage.setItem(LANGUAGE_KEY, next);
+    setLanguage(next);
+  }, [activeLanguage, problem, track, sectionId, code, saveProblemCode]);
 
   // Auto-dismiss shortcut hint after 10 seconds
   useEffect(() => {
@@ -102,17 +139,18 @@ export default function ProblemPage() {
   }, []);
 
   const handleReset = useCallback(() => {
-    if (problem) {
-      const hasChanges = code !== problem.starterCode;
+    if (track) {
+      const hasChanges = code !== track.starterCode;
       if (!hasChanges || window.confirm('Reset your code? Your changes will be lost.')) {
-        setCode(problem.starterCode);
+        setCode(track.starterCode);
         setTestResults([]);
-        setEditableTestCases(problem.testCases);
+        setCompletionNote(null);
+        setEditableTestCases(track.testCases);
         setResetKey(k => k + 1);
         clearOutput();
       }
     }
-  }, [problem, code, clearOutput]);
+  }, [track, code, clearOutput]);
 
   const extractFunctionName = (starterCode: string): string => {
     const matches = [...starterCode.matchAll(/def\s+(\w+)\s*\(/g)];
@@ -120,30 +158,45 @@ export default function ProblemPage() {
   };
 
   const handleRunTests = useCallback(async () => {
-    if (!problem || !isReady || !sectionId) return;
+    if (!problem || !track || !isReady || !sectionId || isRunning) return;
 
     setIsRunning(true);
     setTestResults([]);
+    setCompletionNote(null);
 
     try {
-      const functionName = extractFunctionName(problem.starterCode);
-      const results = await runTests(code, editableTestCases, functionName);
+      const functionName = extractFunctionName(track.starterCode);
+      const results = await runTests(code, editableTestCases, functionName, activeLanguage);
       setTestResults(results);
 
-      const allPassed = results.every(r => r.passed);
-      if (allPassed) {
-        updateProblemStatus(sectionId, problem.id, 'completed');
-        if (!wasCompletedRef.current) {
-          setShowCelebration(true);
-          wasCompletedRef.current = true;
+      if (!results.every(r => r.passed)) return;
+
+      // Completion always counts against the original tests, so editing an
+      // expected value can't mark a problem solved.
+      const testsEdited = JSON.stringify(editableTestCases) !== JSON.stringify(track.testCases);
+      if (testsEdited) {
+        const original = await runTests(code, track.testCases, functionName, activeLanguage, { silent: true });
+        if (!original.every(r => r.passed)) {
+          setCompletionNote('Your edited tests pass, but the original tests don\'t yet. Reset the tests to see which ones fail.');
+          return;
         }
+      }
+
+      updateProblemStatus(sectionId, problem.id, 'completed', activeLanguage);
+      if (!wasCompletedRef.current) {
+        setShowCelebration(true);
+        wasCompletedRef.current = true;
       }
     } finally {
       setIsRunning(false);
     }
-  }, [problem, isReady, sectionId, code, editableTestCases, runTests, updateProblemStatus]);
+  }, [problem, track, isReady, isRunning, sectionId, code, editableTestCases, activeLanguage, runTests, updateProblemStatus]);
 
-  if (!problem || !section) {
+  const handleShowSolution = useCallback(() => {
+    if (problem && sectionId) markSolutionViewed(sectionId, problem.id);
+  }, [problem, sectionId, markSolutionViewed]);
+
+  if (!problem || !section || !track) {
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-100 mb-4">Problem Not Found</h1>
@@ -183,16 +236,68 @@ export default function ProblemPage() {
     </div>
   ) : null;
 
+  const runButton = isRunning ? (
+    <button
+      onClick={stop}
+      className="px-4 py-1.5 bg-red-500/90 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+      title="Stop running code"
+    >
+      <span className="w-2.5 h-2.5 bg-white rounded-sm" aria-hidden="true" />
+      Stop
+    </button>
+  ) : (
+    <button
+      onClick={handleRunTests}
+      disabled={!isReady}
+      className="px-4 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+    >
+      {isReady ? 'Run Tests' : 'Loading Python…'}
+    </button>
+  );
+
+  const languageToggle = problem.pytorch ? (
+    <div
+      role="radiogroup"
+      aria-label="Solution language"
+      className="flex items-center p-0.5 bg-gray-200 dark:bg-dark-700 border border-gray-300 dark:border-dark-500 rounded-lg"
+    >
+      {(['numpy', 'pytorch'] as Language[]).map(lang => (
+        <button
+          key={lang}
+          role="radio"
+          aria-checked={activeLanguage === lang}
+          onClick={() => handleLanguageChange(lang)}
+          disabled={isRunning}
+          className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors disabled:cursor-not-allowed ${
+            activeLanguage === lang
+              ? 'bg-white dark:bg-dark-500 text-gray-900 dark:text-dark-100 shadow-sm'
+              : 'text-gray-500 dark:text-dark-200 hover:text-gray-800 dark:hover:text-dark-100'
+          }`}
+        >
+          {LANGUAGE_LABELS[lang]}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
+  const trackNotes = (completionNote || (activeLanguage === 'pytorch' && problem.pytorch)) ? (
+    <div className="px-4 py-1.5 space-y-1 text-xs border-b border-gray-200 dark:border-dark-500 bg-gray-50 dark:bg-dark-900">
+      {activeLanguage === 'pytorch' && problem.pytorch && (
+        <p className="text-gray-500 dark:text-dark-200">
+          <span className="font-medium text-gray-700 dark:text-dark-100">PyTorch track</span>
+          {' '}runs on an in-browser, NumPy-backed subset of the torch API.
+          {problem.pytorch.note ? ` ${problem.pytorch.note}` : ''}
+        </p>
+      )}
+      {completionNote && <p className="text-amber-600 dark:text-amber-400">{completionNote}</p>}
+    </div>
+  ) : null;
+
   const actionBar = (
     <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-500">
       <div className="flex items-center gap-2">
-        <button
-          onClick={handleRunTests}
-          disabled={!isReady || isRunning}
-          className="px-4 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isRunning ? 'Running...' : 'Run Tests'}
-        </button>
+        {languageToggle}
+        {runButton}
         <span className="text-xs text-gray-400 dark:text-dark-300">or</span>
         <div className="relative">
           <div className="flex items-center gap-1 text-gray-500 dark:text-dark-200">
@@ -205,7 +310,7 @@ export default function ProblemPage() {
       </div>
 
       <div className="flex items-center gap-2">
-        {testResults.length > 0 && testResults.every(r => r.passed) && nextProblemId && (
+        {testResults.length > 0 && testResults.every(r => r.passed) && !completionNote && nextProblemId && (
           <Link
             to={`/problem/${sectionId}/${nextProblemId}`}
             className="px-4 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
@@ -231,7 +336,7 @@ export default function ProblemPage() {
   );
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col -m-6">
+    <div className="h-[calc(100dvh-4rem)] flex flex-col -m-6">
       <SEO
         title={`${problem.title} - ${section.title}`}
         description={`${problemDescriptionText}... Practice this ${problem.difficulty} ML coding problem with instant feedback.`}
@@ -328,20 +433,21 @@ export default function ProblemPage() {
             <div className="flex-1 overflow-y-auto p-4">
               <ProblemDescription problem={problem} />
               <Examples examples={problem.examples} />
-              <Hints hints={problem.hints} solution={problem.solution} onLoadToEditor={(s) => { setCode(s); setMobileTab('code'); }} />
+              <Hints
+                key={`${problem.id}-${activeLanguage}`}
+                hints={trackHints}
+                solution={track.solution}
+                onShowSolution={handleShowSolution}
+                onLoadToEditor={(s) => { setCode(s); setMobileTab('code'); }}
+              />
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Action Bar */}
               <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-dark-900 border-b border-gray-200 dark:border-dark-500">
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleRunTests}
-                    disabled={!isReady || isRunning}
-                    className="px-4 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isRunning ? 'Running...' : 'Run Tests'}
-                  </button>
+                  {languageToggle}
+                  {runButton}
                   <button
                     onClick={handleReset}
                     className="px-3 py-1.5 bg-gray-200 dark:bg-dark-600 text-gray-700 dark:text-dark-200 text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-dark-500 transition-colors"
@@ -349,7 +455,7 @@ export default function ProblemPage() {
                     Reset
                   </button>
                 </div>
-                {testResults.length > 0 && testResults.every(r => r.passed) && nextProblemId && (
+                {testResults.length > 0 && testResults.every(r => r.passed) && !completionNote && nextProblemId && (
                   <Link
                     to={`/problem/${sectionId}/${nextProblemId}`}
                     className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
@@ -358,6 +464,7 @@ export default function ProblemPage() {
                   </Link>
                 )}
               </div>
+              {trackNotes}
               {/* Editor */}
               <div className="flex-[3] overflow-hidden p-2">
                 <CodeEditor
@@ -387,6 +494,7 @@ export default function ProblemPage() {
         /* Maximized Layout - Editor and Console side by side */
         <div className="flex flex-col flex-1 overflow-hidden bg-white dark:bg-dark-800">
           {actionBar}
+          {trackNotes}
 
           <Split
             className="flex flex-1 overflow-hidden"
@@ -474,7 +582,13 @@ export default function ProblemPage() {
               )}
               {descriptionTab === 'hints' && (
                 <div>
-                  <Hints hints={problem.hints} solution={problem.solution} onLoadToEditor={setCode} />
+                  <Hints
+                    key={`${problem.id}-${activeLanguage}`}
+                    hints={trackHints}
+                    solution={track.solution}
+                    onShowSolution={handleShowSolution}
+                    onLoadToEditor={setCode}
+                  />
                 </div>
               )}
             </div>
@@ -483,6 +597,7 @@ export default function ProblemPage() {
           {/* Right Panel - Editor and Console */}
           <div className="flex flex-col overflow-hidden bg-white dark:bg-dark-800">
             {actionBar}
+            {trackNotes}
 
             <Split
               className="flex-1 overflow-hidden"

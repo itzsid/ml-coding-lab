@@ -212,6 +212,26 @@ export default function SectionPage() {
                     <span className="text-gray-400 dark:text-dark-300 text-xs font-mono">
                       {problem.testCases.length} tests
                     </span>
+                    {problem.pytorch && (
+                      <span
+                        className={`text-xs font-mono ${
+                          problemProgress.solvedIn.includes('pytorch')
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-400 dark:text-dark-300'
+                        }`}
+                        title={problemProgress.solvedIn.includes('pytorch') ? 'Solved in PyTorch' : 'PyTorch track available'}
+                      >
+                        {problemProgress.solvedIn.includes('pytorch') ? '✓ ' : ''}PyTorch
+                      </span>
+                    )}
+                    {problemProgress.solutionViewed && (
+                      <span
+                        className="text-xs text-gray-400 dark:text-dark-300"
+                        title="You revealed the reference solution for this problem"
+                      >
+                        solution viewed
+                      </span>
+                    )}
                   </div>
                 </div>
 

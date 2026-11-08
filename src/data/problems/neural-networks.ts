@@ -279,6 +279,13 @@ def cross_entropy_loss(Y_pred, Y_true):
         expected: '0.2899',
         hidden: false,
       },
+      {
+        id: '3',
+        description: 'Three classes, batch of 3',
+        input: 'cross_entropy_loss(np.array([[0.5, 0.3, 0.2], [0.1, 0.8, 0.1], [0.25, 0.25, 0.5]]), np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))',
+        expected: '0.5365',
+        hidden: true,
+      },
     ],
     hints: [
       'Use np.log with a small epsilon for numerical stability',
@@ -359,6 +366,13 @@ def initialize_weights(n_in, n_out, method='xavier'):
         input: '(100, 50, "he")',
         expected: '0.1409',
         hidden: false,
+      },
+      {
+        id: '3',
+        description: 'He init for a wide layer',
+        input: '(512, 256, "he")',
+        expected: '0.0625',
+        hidden: true,
       },
     ],
     hints: [

@@ -7,7 +7,8 @@ This file contains context and instructions for Claude to work on this project e
 This is a LeetCode/HelloInterview-style web application for learning ML by building. Users can:
 - Read problem descriptions and theory introductions
 - Write Python code in a Monaco editor
-- Execute code in-browser via Pyodide (WebAssembly)
+- Execute code in-browser via Pyodide (WebAssembly), in a Web Worker with a timeout and Stop button
+- Solve each problem in **NumPy** or **PyTorch** (NumPy-backed torch shim, see `docs/TORCH_TRACK.md`)
 - Run tests and see pass/fail results
 - Edit test cases to experiment with different inputs/expected values
 - Track progress across sections
@@ -62,8 +63,9 @@ src/
 ├── context/
 │   └── ProgressContext.tsx  # Global progress state (localStorage)
 ├── data/
-│   ├── sections.ts          # Section definitions with intros (14 sections)
-│   └── problems/            # Problem definitions by section (~55 problems)
+│   ├── sections.ts          # Section definitions with intros (15 sections)
+│   └── problems/            # Problem definitions by section (78 problems)
+│       ├── pytorch/         # PyTorch tracks, one file per section (Record<problemId, LanguageVariant>)
 │       ├── index.ts         # Exports all problems
 │       ├── numpy-fundamentals.ts   # Part 1: Foundations
 │       ├── python-basics.ts
@@ -78,10 +80,13 @@ src/
 │       ├── cnn.ts
 │       ├── transformers.ts
 │       ├── generative-models.ts
+│       ├── reinforcement-learning.ts
 │       └── e2e-implementations.ts  # Part 5: Capstone
 ├── hooks/
-│   ├── usePyodide.ts    # Python execution hook
-│   └── useProgress.ts   # Progress tracking (if needed separately)
+│   ├── usePyodide.ts    # React binding for the shared Python runtime
+│   └── useDarkMode.ts
+├── lib/
+│   └── pythonRunner.ts  # Singleton Web Worker manager (timeout, stop, restart)
 ├── pages/
 │   ├── HomePage.tsx     # Landing page with section cards
 │   ├── SectionPage.tsx  # Section intro + problem list
@@ -97,14 +102,18 @@ src/
 ## Key Files to Understand
 
 ### Data Layer
-- **`src/data/sections.ts`** - Defines the 14 learning sections organized in 5 parts (Foundations → Data → Classical ML → Deep Learning → Capstone)
-- **`src/data/problems/*.ts`** - Problem definitions with descriptions, starter code, test cases, hints, solutions (~55 problems total)
+- **`src/data/sections.ts`** - Defines the 15 learning sections organized in 5 parts (Foundations → Data → Classical ML → Deep Learning → Capstone)
+- **`src/data/problems/*.ts`** - Problem definitions with descriptions, starter code, test cases, hints, solutions (78 problems total)
 
 ### State Management
 - **`src/context/ProgressContext.tsx`** - React Context for tracking problem completion, saved code, stored in localStorage under key `ml-interview-progress`
 
 ### Python Execution
-- **`src/hooks/usePyodide.ts`** - Loads Pyodide, executes user code, runs test cases, captures stdout/stderr
+- **`public/pyodide-worker.js`** - Classic Web Worker that loads Pyodide + NumPy and runs code off the main thread
+- **`public/py/runner.py`** - The test harness (fresh namespace per run, seeded RNG, result stringification). Shared by the browser and `scripts/validate_solutions.py`, so a pass in CI means a pass in the app
+- **`public/py/torch_shim.py`** - NumPy-backed `torch` subset with autograd; `install()` registers it as `torch`
+- **`src/lib/pythonRunner.ts`** - Singleton worker manager: loads once per visit, serializes jobs, kills and restarts the worker on timeout (30s) or Stop
+- **`src/hooks/usePyodide.ts`** - React binding: per-component console output, `runCode`, `runTests(code, tests, fn, language)`, `stop`
 
 ### Main UI
 - **`src/pages/ProblemPage.tsx`** - The main coding interface with split panes (problem description | code editor + console)
@@ -143,6 +152,7 @@ Sections are organized in a logical learning progression:
 | **CNNs** | `cnn.ts` | Conv Output Size, 2D Convolution, Max Pooling, Flatten Layer |
 | **Transformers** | `transformers.ts` | Scaled Dot-Product Attention, Multi-Head Attention, Positional Encoding, Layer Norm, Causal Mask |
 | **Generative Models** | `generative-models.ts` | KL Divergence, VAE Reparameterization, VAE Loss, Diffusion Noise Schedule, Diffusion Forward |
+| **Reinforcement Learning** | `reinforcement-learning.ts` | Discounted Return, Epsilon-Greedy Policy, Bellman Expectation (State Value), Q-Learning Update, SARSA Update, TD(0) Value Prediction, Value Iteration Step, REINFORCE Policy Gradient, Advantage Estimation (GAE), PPO Clipped Objective, N-Step Return, RLHF Reward Model Loss, Direct Preference Optimization (DPO), KL Divergence Penalty (RLHF), PPO-RLHF Objective |
 
 ### Part 5: Capstone
 | Section | File | Problems |
@@ -196,6 +206,9 @@ def function_name(arr):
 ```
 
 3. Add the problem ID to the section's `problems` array in `src/data/sections.ts`
+4. Include at least one **hidden** test that checks values (not just shapes), so hard-coding the visible answers doesn't pass
+5. Add a PyTorch track in `src/data/problems/pytorch/[section].ts` (rules in `docs/TORCH_TRACK.md`: expression-based tests only, same semantics as the NumPy track)
+6. Run `npm test`: `src/__tests__/solutions.test.ts` checks every NumPy and PyTorch solution against its own tests with the real harness
 
 ### Problem Description Best Practices
 
@@ -475,7 +488,9 @@ Or multi-step validation:
 
 #### Validating Test Cases
 
-**CRITICAL**: Before adding new problems, you MUST verify solutions work:
+**CRITICAL**: Before adding new problems, you MUST verify solutions work. `npm test` does this automatically for every problem and track (`src/__tests__/solutions.test.ts` → `scripts/validate_solutions.py`, using the same `public/py/runner.py` harness as the browser). To check the PyTorch tracks against real PyTorch instead of the shim: dump `allProblems` to JSON and run `python3 scripts/validate_solutions.py problems.json --torch real` in an environment with torch installed.
+
+Manual options:
 
 **Option 1: Manual Testing via Browser**
 1. Run the dev server: `npm run dev`
@@ -578,10 +593,11 @@ The left panel uses the `.problem-panel` CSS class (defined in `src/index.css`) 
 
 ### Fixing Python Execution Issues
 
-The Python execution logic is in `src/hooks/usePyodide.ts`:
-- `runCode()` - Executes arbitrary Python code
-- `runTests()` - Runs test cases against user's function
-- Function name is extracted from starter code via regex
+- Test evaluation logic (expression vs argument tests, stringification): `public/py/runner.py`
+- Worker protocol / Pyodide loading: `public/pyodide-worker.js`
+- Timeout, stop, job queue: `src/lib/pythonRunner.ts`
+- Function name is extracted from starter code via regex (last `def` in the starter code)
+- Each test runs with `np.random.seed(0)` (and `torch.manual_seed(0)`), so random inputs are reproducible
 
 ## Deployment
 
@@ -597,7 +613,7 @@ The `base` path in `vite.config.ts` is set to `/ml-coding-lab/` for GitHub Pages
 
 1. **Pyodide loading time** - First load takes a few seconds to download WebAssembly
 2. **Limited Python packages** - Only numpy is pre-loaded; sklearn requires additional loading
-3. **No code execution timeout** - Long-running code can freeze the browser
+3. **PyTorch is a shim** - real PyTorch has no WebAssembly build; the torch track runs a NumPy-backed subset (unsupported APIs raise a clear `NotImplementedError`)
 4. **localStorage only** - Progress doesn't sync across devices
 
 ## Content References
@@ -610,7 +626,6 @@ The problem content was developed using these resources:
 ## Future Improvements to Consider
 
 - Add more ML packages (sklearn, pandas)
-- Implement code execution timeout
 - Add user authentication for cloud sync
 - Add problem difficulty filters
 - Add search functionality
@@ -618,7 +633,6 @@ The problem content was developed using these resources:
 - Add discussion/comments section
 - Add dark/light theme toggle (currently light theme only)
 - Add RNN/LSTM section
-- Add reinforcement learning basics
 - Add more optimization algorithms (SGD variants, Adam details)
 - Add GAN implementation section
 

@@ -4,9 +4,11 @@ interface HintsProps {
   hints: string[];
   solution: string;
   onLoadToEditor?: (code: string) => void;
+  /** Called when the learner reveals the solution. */
+  onShowSolution?: () => void;
 }
 
-export default function Hints({ hints, solution, onLoadToEditor }: HintsProps) {
+export default function Hints({ hints, solution, onLoadToEditor, onShowSolution }: HintsProps) {
   const [revealedHints, setRevealedHints] = useState<number>(0);
   const [showSolution, setShowSolution] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -19,6 +21,7 @@ export default function Hints({ hints, solution, onLoadToEditor }: HintsProps) {
 
   const handleShowSolution = () => {
     setShowSolution(true);
+    onShowSolution?.();
   };
 
   const handleCopyToClipboard = async () => {
