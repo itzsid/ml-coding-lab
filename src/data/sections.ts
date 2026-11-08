@@ -1,13 +1,29 @@
 import { Section } from '../types';
+import { allProblems } from './problems';
 
-export const sections: Section[] = [
+/**
+ * A section's problem list = its curated order, followed by any other problems
+ * whose \`section\` field points here (in file order). Adding a problem to a
+ * section file is enough for it to appear; no edit to this file is needed.
+ */
+function ordered(sectionId: string, curated: string[]): string[] {
+  const ids = allProblems.filter(p => p.section === sectionId).map(p => p.id);
+  return [...curated.filter(id => ids.includes(id)), ...ids.filter(id => !curated.includes(id))];
+}
+
+/** Every section, including ones still being written (no problems yet). */
+export const allSections: Section[] = [
+
+  // ==========================================
+  // PART 1: FOUNDATIONS
+  // ==========================================
   // ==========================================
   // PART 1: FOUNDATIONS
   // ==========================================
   {
     id: 'numpy-fundamentals',
-    title: 'NumPy Fundamentals',
-    description: 'Master NumPy array operations essential for ML development.',
+    title: 'NumPy & Tensor Fundamentals',
+    description: 'Arrays, indexing, broadcasting and vectorized math: the language every ML model is written in.',
     icon: '🔢',
     introduction: `
 # NumPy Fundamentals
@@ -42,32 +58,26 @@ Arrays of different shapes can be combined:
 - \`flatten()\`, \`ravel()\`: To 1D
 
 Master these operations to write efficient ML code!
-    `,
-    problems: ['numpy-array-creation', 'numpy-indexing', 'numpy-broadcasting', 'numpy-aggregations', 'numpy-reshape-transpose'],
-  },
-  {
-    id: 'python-basics',
-    title: 'Python Basics for ML',
-    description: 'Master NumPy arrays and essential Python operations for machine learning.',
-    icon: '🐍',
-    introduction: `
-# Python Basics for Machine Learning
+
+---
+
+## Python Basics for Machine Learning
 
 NumPy is the foundation of nearly all machine learning in Python. Before diving into complex algorithms, you need to master array operations.
 
-## Key Concepts
+### Key Concepts
 
-### NumPy Arrays
+#### NumPy Arrays
 - **Creation**: \`np.array()\`, \`np.zeros()\`, \`np.ones()\`, \`np.arange()\`
 - **Shape manipulation**: \`reshape()\`, \`flatten()\`, \`transpose()\`
 - **Indexing**: Slicing, boolean indexing, fancy indexing
 
-### Essential Operations
+#### Essential Operations
 - **Element-wise**: Addition, multiplication, mathematical functions
 - **Aggregations**: \`sum()\`, \`mean()\`, \`std()\`, \`min()\`, \`max()\`
 - **Broadcasting**: Automatic expansion of arrays for operations
 
-### Why It Matters
+#### Why It Matters
 Every ML algorithm processes data as arrays. Understanding these operations lets you:
 - Prepare data efficiently
 - Debug model issues
@@ -75,8 +85,9 @@ Every ML algorithm processes data as arrays. Understanding these operations lets
 
 Let's practice with hands-on problems!
     `,
-    problems: ['numpy-array-sum', 'numpy-matrix-multiply', 'numpy-broadcast-add'],
+    problems: ordered('numpy-fundamentals', ['numpy-array-creation', 'numpy-indexing', 'numpy-broadcasting', 'numpy-aggregations', 'numpy-reshape-transpose', 'numpy-array-sum', 'numpy-matrix-multiply', 'numpy-broadcast-add']),
   },
+
   {
     id: 'einsum',
     title: 'Einstein Summation (Einsum)',
@@ -131,13 +142,15 @@ Letters that disappear are summed over (contracted).
 
 Master einsum to write clean, efficient deep learning code!
     `,
-    problems: ['einsum-basics', 'einsum-matrix-ops', 'einsum-batch-ops', 'einsum-advanced', 'einsum-vs-matmul'],
+    problems: ordered('einsum', ['einsum-basics', 'einsum-matrix-ops', 'einsum-batch-ops', 'einsum-advanced', 'einsum-vs-matmul']),
   },
+
   {
     id: 'pytorch-basics',
-    title: 'PyTorch Basics',
-    description: 'Learn PyTorch patterns implemented in NumPy.',
+    title: 'PyTorch Essentials',
+    description: 'Tensors, autograd, nn.Module and the training loop, written with the real PyTorch API.',
     icon: '🔥',
+    defaultLanguage: 'pytorch',
     introduction: `
 # PyTorch Basics
 
@@ -191,9 +204,12 @@ class Linear(nn.Module):
 
 Learn these patterns to understand PyTorch!
     `,
-    problems: ['tensor-creation', 'tensor-operations', 'autograd-concepts', 'nn-modules', 'loss-functions'],
+    problems: ordered('pytorch-basics', ['tensor-creation', 'tensor-operations', 'autograd-concepts', 'nn-modules', 'loss-functions']),
   },
 
+  // ==========================================
+  // PART 2: DATA & CLASSICAL ML
+  // ==========================================
   // ==========================================
   // PART 2: DATA HANDLING
   // ==========================================
@@ -231,7 +247,7 @@ Garbage in, garbage out. Proper preprocessing can:
 
 Let's practice these essential skills!
     `,
-    problems: ['normalize-features', 'handle-missing-data', 'one-hot-encode'],
+    problems: ordered('data-preprocessing', ['normalize-features', 'handle-missing-data', 'one-hot-encode']),
   },
 
   // ==========================================
@@ -281,8 +297,9 @@ Interviewers often ask you to:
 
 Let's build these algorithms!
     `,
-    problems: ['logistic-regression', 'binary-cross-entropy', 'hinge-loss', 'decision-tree-split', 'linear-regression-gd', 'logistic-regression-full', 'linear-svm'],
+    problems: ordered('supervised-learning', ['logistic-regression', 'binary-cross-entropy', 'hinge-loss', 'decision-tree-split', 'linear-regression-gd', 'logistic-regression-full', 'linear-svm']),
   },
+
   {
     id: 'unsupervised-learning',
     title: 'Unsupervised Learning',
@@ -322,8 +339,9 @@ Unsupervised learning finds patterns in unlabeled data.
 
 Let's implement these algorithms!
     `,
-    problems: ['kmeans-clustering', 'pca-implementation'],
+    problems: ordered('unsupervised-learning', ['kmeans-clustering', 'pca-implementation']),
   },
+
   {
     id: 'model-evaluation',
     title: 'Model Evaluation',
@@ -360,17 +378,17 @@ Building a model is only half the job. You need to evaluate it properly.
 
 Let's practice evaluation!
     `,
-    problems: ['precision-recall-f1', 'cross-validation', 'confusion-matrix'],
+    problems: ordered('model-evaluation', ['precision-recall-f1', 'cross-validation', 'confusion-matrix']),
   },
 
   // ==========================================
-  // PART 4: DEEP LEARNING
+  // PART 3: DEEP LEARNING
   // ==========================================
   {
-    id: 'deep-learning',
-    title: 'Deep Learning Basics',
-    description: 'Activation functions and fundamental building blocks.',
-    icon: '⚡',
+    id: 'neural-networks',
+    title: 'Neural Network Fundamentals',
+    description: 'Perceptrons to MLPs: activations, forward and backward passes, initialization and normalization.',
+    icon: '🧠',
     introduction: `
 # Deep Learning Basics
 
@@ -396,41 +414,35 @@ Core building blocks that appear in every neural network.
 - **Computation**: Matrix multiplication + bias + activation
 
 Let's implement these fundamentals!
-    `,
-    problems: ['perceptron', 'neural-network-forward', 'backpropagation'],
-  },
-  {
-    id: 'neural-networks',
-    title: 'Neural Networks',
-    description: 'Build neural networks from scratch with forward and backward passes.',
-    icon: '🧠',
-    introduction: `
-# Neural Networks
+
+---
+
+## Neural Networks
 
 Neural networks are the foundation of deep learning. Understanding the math behind them is essential for ML interviews.
 
-## Key Concepts
+### Key Concepts
 
-### Multi-Layer Perceptron (MLP)
+#### Multi-Layer Perceptron (MLP)
 - **Architecture**: Input → Hidden layers → Output
 - **Forward pass**: Compute activations layer by layer
 - **Activation functions**: ReLU, Sigmoid, Tanh, Softmax
 
-### Backpropagation
+#### Backpropagation
 - **Chain rule**: Compute gradients layer by layer
 - **Weight updates**: Gradient descent on all parameters
 - **Key insight**: Errors propagate backwards through the network
 
-### Training Techniques
+#### Training Techniques
 - **Weight Initialization**: Xavier, He initialization
 - **Batch Normalization**: Normalize activations for stable training
 - **Dropout**: Randomly drop neurons to prevent overfitting
 
-### Loss Functions
+#### Loss Functions
 - **Cross-entropy**: For classification
 - **MSE**: For regression
 
-### Common Interview Topics
+#### Common Interview Topics
 - Implement forward/backward pass from scratch
 - Explain vanishing/exploding gradients
 - Discuss initialization strategies
@@ -438,12 +450,26 @@ Neural networks are the foundation of deep learning. Understanding the math behi
 
 Let's build neural networks from scratch!
     `,
-    problems: ['cross-entropy-loss', 'mlp-forward-backward', 'weight-init', 'batch-norm', 'dropout'],
+    problems: ordered('neural-networks', ['perceptron', 'neural-network-forward', 'backpropagation', 'cross-entropy-loss', 'mlp-forward-backward', 'weight-init', 'batch-norm', 'dropout']),
   },
+
+  {
+    id: 'optimization',
+    title: 'Optimization & Training',
+    description: 'Optimizers, learning-rate schedules and the tricks that make training stable.',
+    icon: '⚙️',
+    introduction: `
+# Optimization & Training
+
+_This section is being written._
+    `,
+    problems: ordered('optimization', []),
+  },
+
   {
     id: 'cnn',
-    title: 'Convolutional Neural Networks',
-    description: 'Understand convolutions, pooling, and CNN architectures.',
+    title: 'Vision: CNNs & ViTs',
+    description: 'Convolutions, pooling, residual blocks and patch embeddings for images.',
     icon: '🖼️',
     introduction: `
 # Convolutional Neural Networks (CNNs)
@@ -481,8 +507,25 @@ output = (input - kernel + 2*padding) / stride + 1
 
 Let's implement CNN operations!
     `,
-    problems: ['conv-output-size', 'conv2d-forward', 'max-pool', 'flatten-layer', 'conv2d-advanced'],
+    problems: ordered('cnn', ['conv-output-size', 'conv2d-forward', 'max-pool', 'flatten-layer', 'conv2d-advanced']),
   },
+
+  {
+    id: 'sequence-models',
+    title: 'Sequence Models',
+    description: 'RNNs, LSTMs and GRUs: modelling sequences before (and alongside) attention.',
+    icon: '🔁',
+    introduction: `
+# Sequence Models
+
+_This section is being written._
+    `,
+    problems: ordered('sequence-models', []),
+  },
+
+  // ==========================================
+  // PART 4: MODERN AI
+  // ==========================================
   {
     id: 'transformers',
     title: 'Attention & Transformers',
@@ -528,8 +571,35 @@ Attention(Q, K, V) = softmax(Q @ K.T / sqrt(d_k)) @ V
 
 Let's build transformers from scratch!
     `,
-    problems: ['scaled-dot-product-attention', 'multi-head-attention', 'positional-encoding', 'layer-norm', 'causal-mask'],
+    problems: ordered('transformers', ['scaled-dot-product-attention', 'multi-head-attention', 'positional-encoding', 'layer-norm', 'causal-mask']),
   },
+
+  {
+    id: 'llm-internals',
+    title: 'LLM Internals',
+    description: 'Tokenizers, sampling, KV caches, RoPE, GQA, MoE: how modern language models actually run.',
+    icon: '🧩',
+    introduction: `
+# LLM Internals
+
+_This section is being written._
+    `,
+    problems: ordered('llm-internals', []),
+  },
+
+  {
+    id: 'representation-learning',
+    title: 'Representation Learning & Retrieval',
+    description: 'Contrastive learning, embedding search and retrieval for RAG.',
+    icon: '🧭',
+    introduction: `
+# Representation Learning & Retrieval
+
+_This section is being written._
+    `,
+    problems: ordered('representation-learning', []),
+  },
+
   {
     id: 'generative-models',
     title: 'Generative Models',
@@ -577,7 +647,7 @@ x_t = sqrt(α_bar_t) * x_0 + sqrt(1 - α_bar_t) * ε
 
 Let's implement generative models!
     `,
-    problems: ['kl-divergence', 'vae-reparameterization', 'vae-loss', 'vqvae-quantization', 'diffusion-noise-schedule', 'diffusion-forward'],
+    problems: ordered('generative-models', ['kl-divergence', 'vae-reparameterization', 'vae-loss', 'vqvae-quantization', 'diffusion-noise-schedule', 'diffusion-forward']),
   },
 
   // ==========================================
@@ -638,11 +708,11 @@ Q(s,a) = E[r + γ * max_a' Q(s',a')]
 - Explain on-policy vs off-policy
 - Understand policy gradients and REINFORCE
 - Know GAE and PPO for modern deep RL
-- **RLHF**: Reward modeling, KL penalties, DPO
+- **RLHF** (reward models, DPO, KL penalties) lives in the **Post-training & Efficiency** section, which builds on these foundations
 
 Master these concepts for ML interviews at top companies!
     `,
-    problems: [
+    problems: ordered('reinforcement-learning', [
       'rl-discounted-return',
       'rl-epsilon-greedy',
       'rl-bellman-value',
@@ -654,13 +724,38 @@ Master these concepts for ML interviews at top companies!
       'rl-policy-gradient',
       'rl-advantage-estimation',
       'rl-ppo-clip',
-      'rl-reward-modeling',
-      'rl-dpo-loss',
-      'rl-kl-penalty',
-      'rl-ppo-llm-objective',
-    ],
+    ]),
   },
 
+  {
+    id: 'post-training',
+    title: 'Post-training & Efficiency',
+    description: 'Reward models, DPO, GRPO, LoRA and quantization: turning a base model into a useful, cheap one.',
+    icon: '🎯',
+    introduction: `
+# Post-training & Efficiency
+
+A pretrained language model predicts text. Post-training turns it into an assistant that follows instructions and reflects human preferences, and efficiency techniques make it affordable to train and serve.
+
+## Preference learning
+| Method | Idea | Loss |
+|--------|------|------|
+| Reward model | Learn a scalar score from pairwise human preferences (Bradley–Terry) | \`-log σ(r_chosen - r_rejected)\` |
+| PPO-RLHF | Maximize reward with a KL penalty that keeps the policy near the reference model | clipped surrogate with \`A = r - β·KL\` |
+| DPO | Skip the reward model: optimize preferences directly through log-probability ratios | \`-log σ(β·(Δ_chosen - Δ_rejected))\` |
+
+## Why the KL penalty?
+Without it, the policy drifts toward outputs that fool the reward model ("reward hacking") and forgets how to write fluent text. The KL term measures how far the policy has moved from the frozen reference model.
+
+## Efficiency
+Fine-tuning and serving large models is dominated by memory. Low-rank adapters (LoRA) train a tiny fraction of the weights, and quantization stores weights in fewer bits.
+    `,
+    problems: ordered('post-training', ['rl-reward-modeling', 'rl-kl-penalty', 'rl-ppo-llm-objective', 'rl-dpo-loss']),
+  },
+
+  // ==========================================
+  // PART 5: CAPSTONE
+  // ==========================================
   // ==========================================
   // PART 6: CAPSTONE - END-TO-END IMPLEMENTATIONS
   // ==========================================
@@ -720,6 +815,9 @@ Image classifier with:
 
 Build these models to truly understand deep learning!
     `,
-    problems: ['e2e-mlp', 'e2e-transformer', 'e2e-vae', 'e2e-vqvae', 'e2e-diffusion', 'e2e-cnn'],
+    problems: ordered('e2e-implementations', ['e2e-mlp', 'e2e-transformer', 'e2e-vae', 'e2e-vqvae', 'e2e-diffusion', 'e2e-cnn']),
   },
 ];
+
+/** Sections shown in the app: only those with at least one problem. */
+export const sections: Section[] = allSections.filter(s => s.problems.length > 0);

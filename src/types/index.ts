@@ -61,6 +61,8 @@ export interface Section {
   introduction: string;
   icon: string;
   problems: string[];
+  /** Solution track to open by default (e.g. PyTorch Essentials opens in PyTorch). */
+  defaultLanguage?: Language;
 }
 
 export interface ProblemProgress {

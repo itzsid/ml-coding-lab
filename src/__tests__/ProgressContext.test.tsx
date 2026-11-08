@@ -101,3 +101,34 @@ describe('ProgressContext', () => {
     expect(result.current.progress).toEqual({});
   });
 });
+
+describe('migrateProgress', () => {
+  it('re-files entries for problems that moved to another section', async () => {
+    const { migrateProgress } = await import('../context/ProgressContext');
+    const migrated = migrateProgress({
+      'python-basics': { 'numpy-array-sum': { status: 'completed', code: 'x' } },
+      'deep-learning': { perceptron: { status: 'in_progress' } },
+      'reinforcement-learning': {
+        'rl-dpo-loss': { status: 'completed' },
+        'rl-discounted-return': { status: 'completed' },
+      },
+      'numpy-fundamentals': { 'numpy-indexing': { status: 'completed' } },
+    });
+    expect(migrated['python-basics']).toBeUndefined();
+    expect(migrated['deep-learning']).toBeUndefined();
+    expect(migrated['numpy-fundamentals']).toEqual({
+      'numpy-indexing': { status: 'completed' },
+      'numpy-array-sum': { status: 'completed', code: 'x' },
+    });
+    expect(migrated['neural-networks']).toEqual({ perceptron: { status: 'in_progress' } });
+    expect(migrated['post-training']).toEqual({ 'rl-dpo-loss': { status: 'completed' } });
+    expect(migrated['reinforcement-learning']).toEqual({ 'rl-discounted-return': { status: 'completed' } });
+  });
+
+  it('keeps entries for unknown problems where they were', async () => {
+    const { migrateProgress } = await import('../context/ProgressContext');
+    expect(migrateProgress({ old: { gone: { status: 'completed' } } })).toEqual({
+      old: { gone: { status: 'completed' } },
+    });
+  });
+});

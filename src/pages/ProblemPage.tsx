@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import Split from 'react-split';
 import { getProblemById } from '../data/problems';
 import { sections } from '../data/sections';
@@ -31,7 +31,14 @@ export default function ProblemPage() {
   const [language, setLanguage] = useState<Language>(() =>
     localStorage.getItem(LANGUAGE_KEY) === 'pytorch' ? 'pytorch' : 'numpy'
   );
-  const activeLanguage: Language = language === 'pytorch' && problem?.pytorch ? 'pytorch' : 'numpy';
+  // A choice made on this problem wins; otherwise the section's default
+  // (PyTorch Essentials opens in PyTorch), otherwise the remembered choice.
+  const [languageOverride, setLanguageOverride] = useState<{ problemId: string; language: Language } | null>(null);
+  const preferredLanguage: Language =
+    languageOverride && languageOverride.problemId === problem?.id
+      ? languageOverride.language
+      : section?.defaultLanguage ?? language;
+  const activeLanguage: Language = preferredLanguage === 'pytorch' && problem?.pytorch ? 'pytorch' : 'numpy';
   const track = activeLanguage === 'pytorch' && problem?.pytorch ? problem.pytorch : problem;
   const trackHints = (activeLanguage === 'pytorch' && problem?.pytorch?.hints) || problem?.hints || [];
 
@@ -109,6 +116,7 @@ export default function ProblemPage() {
     if (code && code !== track.starterCode) saveProblemCode(sectionId, problem.id, code, activeLanguage);
     localStorage.setItem(LANGUAGE_KEY, next);
     setLanguage(next);
+    setLanguageOverride({ problemId: problem.id, language: next });
   }, [activeLanguage, problem, track, sectionId, code, saveProblemCode]);
 
   // Auto-dismiss shortcut hint after 10 seconds
@@ -195,6 +203,11 @@ export default function ProblemPage() {
   const handleShowSolution = useCallback(() => {
     if (problem && sectionId) markSolutionViewed(sectionId, problem.id);
   }, [problem, sectionId, markSolutionViewed]);
+
+  // Problems that moved to another section keep working under their old URL.
+  if (problem && problem.section !== sectionId) {
+    return <Navigate replace to={`/problem/${problem.section}/${problem.id}`} />;
+  }
 
   if (!problem || !section || !track) {
     return (

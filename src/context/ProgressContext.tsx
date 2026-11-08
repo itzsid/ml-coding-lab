@@ -1,7 +1,26 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Progress, ProblemStatus, Language } from '../types';
+import { allProblems } from '../data/problems';
 
 const STORAGE_KEY = 'ml-interview-progress';
+
+/**
+ * Progress is stored per section. When problems move between sections (e.g.
+ * Python Basics merged into NumPy Fundamentals), re-file saved entries under
+ * the problem's current section so nothing is lost.
+ */
+export function migrateProgress(saved: Progress): Progress {
+  const sectionOf = new Map(allProblems.map(p => [p.id, p.section]));
+  const out: Progress = {};
+  for (const [sectionId, problems] of Object.entries(saved ?? {})) {
+    if (!problems || typeof problems !== 'object') continue;
+    for (const [problemId, entry] of Object.entries(problems)) {
+      const target = sectionOf.get(problemId) ?? sectionId;
+      out[target] = { ...out[target], [problemId]: { ...out[target]?.[problemId], ...entry } };
+    }
+  }
+  return out;
+}
 
 interface ProgressContextType {
   progress: Progress;
@@ -25,7 +44,7 @@ const ProgressContext = createContext<ProgressContextType | null>(null);
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<Progress>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : {};
+    return saved ? migrateProgress(JSON.parse(saved)) : {};
   });
 
   useEffect(() => {

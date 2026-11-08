@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { allProblems, getProblemById, getProblemsBySection } from '../data/problems';
-import { sections } from '../data/sections';
+import { sections, allSections } from '../data/sections';
 
 describe('Problems Data', () => {
   it('should have all problems defined', () => {
@@ -55,7 +55,9 @@ describe('Problems Data', () => {
 
 describe('Sections Data', () => {
   it('should have all sections defined', () => {
-    expect(sections.length).toBe(15);
+    expect(allSections.length).toBe(18);
+    // Sections without problems yet are hidden from the app.
+    expect(sections.every(s => s.problems.length > 0)).toBe(true);
   });
 
   it('should have valid section structure', () => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
+import { SECTION_ALIASES } from '../data/redirects';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { sections } from '../data/sections';
@@ -34,6 +35,10 @@ export default function SectionPage() {
       localStorage.setItem(`section-intro-collapsed-${sectionId}`, String(newValue));
     }
   };
+
+  if (sectionId && SECTION_ALIASES[sectionId]) {
+    return <Navigate replace to={`/section/${SECTION_ALIASES[sectionId]}`} />;
+  }
 
   if (!section) {
     return (
