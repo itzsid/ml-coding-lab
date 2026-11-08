@@ -1,3 +1,8 @@
+> [!WARNING]
+> **Deprecated.** ML Coding Lab has moved to **[ML Grind](https://mlgrind.github.io/)**, developed at
+> [mlgrind/mlgrind.github.io](https://github.com/mlgrind/mlgrind.github.io). This repository is no longer
+> maintained, and https://itzsid.github.io/ml-coding-lab/ redirects to the new site.
+
 # ML Interview Prep
 
 A LeetCode-style web application for machine learning interview preparation with browser-based Python execution.
