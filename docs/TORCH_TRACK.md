@@ -59,3 +59,28 @@ Real PyTorch has no WebAssembly build, so it can't run in Pyodide. The browser r
 **Not supported (fail with a clear `NotImplementedError("torch shim: X is not supported in the browser")`):** CUDA, `torch.compile`, JIT, sparse tensors, complex dtypes, `DataLoader` (a minimal `utils.data.TensorDataset` + `DataLoader(batch_size, shuffle)` is nice-to-have), and saving or loading files.
 
 **Numerics:** float32 by default like torch (store `np.float32`), so values match real torch to about 1e-6. Integer tensors are int64. Division of ints gives float (true division). Error messages mimic torch where cheap (shape mismatch in matmul, for example).
+
+## Shim status
+
+`scripts/test_torch_shim.py` compares the shim with real PyTorch: 1057 checks of forward values and gradients, plus optimizer trajectories, LR schedules and dtypes. Without torch it falls back to 621 finite-difference and hand-computed checks. It passes on Python 3.13, and on Python 3.11 with NumPy 1.26, which is what Pyodide 0.26 ships. Run it with an interpreter that has torch to get the comparison:
+
+```bash
+python3 scripts/test_torch_shim.py
+```
+
+**Beyond the contract:** it also implements `utils.data` (`Dataset`, `TensorDataset`, `DataLoader`), more layers (`RMSNorm`, `GroupNorm`, `ConvTranspose`, `TransformerEncoderLayer`), all common LR schedulers, extra distributions with `kl_divergence`, `autograd.Function` and more `linalg`.
+
+**Not supported** (each raises `NotImplementedError("torch shim: ... is not supported in the browser")`):
+- CUDA, `torch.compile`, JIT and `save`/`load`
+- complex and sparse dtypes
+- higher-order gradients (`create_graph=True`)
+- RNN, LSTM and GRU, the Transformer decoder and Conv3d
+- gradients through the SVD, QR and Cholesky factors
+
+**Deliberate differences from torch:**
+- A second `backward()` works without `retain_graph`.
+- With autograd on, in-place ops copy the array, so views don't share memory then (they do under `no_grad`).
+- It doesn't track in-place versions, so it never raises torch's "modified by an inplace operation" error.
+- `ndarray + tensor` works.
+
+**Randomness:** `torch.manual_seed` seeds NumPy's global RNG, so seeded shim randomness matches NumPy's, not real torch's. Tests that depend on random values must check properties, not exact numbers.
