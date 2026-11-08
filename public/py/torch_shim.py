@@ -419,7 +419,7 @@ def _run_backward(roots, root_grads, capture=None):
             if t.grad is None:
                 t.grad = Tensor._wrap(np.array(g, dtype=t._data.dtype))
             else:
-                t.grad._data = t.grad._data + g
+                t.grad._data = np.asarray(t.grad._data + g)
         if isinstance(node, AccumulateGrad):
             if capture is None:
                 v = node.variable
@@ -427,7 +427,7 @@ def _run_backward(roots, root_grads, capture=None):
                 if v.grad is None:
                     v.grad = Tensor._wrap(gg)
                 else:
-                    v.grad._data = v.grad._data + gg
+                    v.grad._data = np.asarray(v.grad._data + gg)
             continue
         with np.errstate(all='ignore'):
             pgrads = node.fn(g)
@@ -628,7 +628,7 @@ class Tensor:
             self.requires_grad_(True)
 
     def _init(self, data):
-        self._data = data
+        self._data = np.asarray(data)
         self._requires_grad = False
         self._node = None
         self.grad = None
@@ -1010,7 +1010,7 @@ class Tensor:
                     if t.grad is None:
                         t.grad = Tensor._wrap(gg)
                     else:
-                        t.grad._data = t.grad._data + gg
+                        t.grad._data = np.asarray(t.grad._data + gg)
             return
         _run_backward([self._grad_node()], [g])
 
@@ -1044,8 +1044,8 @@ class Tensor:
         if r.dtype != self._data.dtype and _cat(r.dtype) > _cat(self._data.dtype):
             raise RuntimeError(f"result type {_to_torch_dtype(r.dtype)} can't be cast to the desired output type "
                                f"{self.dtype}")
-        if not self._data.flags.writeable:
-            self._data = self._data.copy()
+        if not isinstance(self._data, np.ndarray) or not self._data.flags.writeable:
+            self._data = np.array(self._data)
         self._data[...] = r
         return self
 
@@ -5974,7 +5974,7 @@ class _NormBase(Module):
         self._check_input_dim(input)
         momentum = self.momentum
         if self.training and self.track_running_stats:
-            self.num_batches_tracked._data = self.num_batches_tracked._data + 1
+            self.num_batches_tracked._data = np.asarray(self.num_batches_tracked._data + 1)
             if self.momentum is None:
                 momentum = 1.0 / float(self.num_batches_tracked._data)
         use_batch = self.training or not self.track_running_stats
@@ -6491,7 +6491,7 @@ def clip_grad_norm_(parameters, max_norm, norm_type=2.0, error_if_nonfinite=Fals
     coef = max_norm / (total + 1e-6)
     if coef < 1:
         for g in grads:
-            g._data = (g._data * coef).astype(g._data.dtype)
+            g._data = np.asarray(g._data * coef, dtype=g._data.dtype)
     return Tensor._wrap(np.asarray(total, dtype=grads[0]._data.dtype))
 
 
@@ -6500,7 +6500,7 @@ def clip_grad_value_(parameters, clip_value, foreach=None):
         parameters = [parameters]
     for p in parameters:
         if p.grad is not None:
-            p.grad._data = np.clip(p.grad._data, -clip_value, clip_value)
+            p.grad._data = np.asarray(np.clip(p.grad._data, -clip_value, clip_value))
 
 
 def parameters_to_vector(parameters):
