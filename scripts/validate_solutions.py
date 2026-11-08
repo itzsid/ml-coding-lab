@@ -11,6 +11,8 @@ src/__tests__/solutions.test.ts, which runs this script as part of
 `npm test`. It uses the exact harness the browser uses (public/py/runner.py),
 so a pass here means a pass in the app.
 """
+import contextlib
+import io
 import json
 import os
 import re
@@ -90,7 +92,9 @@ def main(path, torch_mode='shim'):
         problems = json.load(f)
     if isinstance(problems, dict):  # tolerate {problems: [...], sections: [...]}
         problems = problems['problems']
-    failures = check(problems, torch_mode)
+    # Solutions may print; keep stdout clean for the JSON report.
+    with contextlib.redirect_stdout(io.StringIO()):
+        failures = check(problems, torch_mode)
     print(json.dumps({'checked': len(problems), 'failures': failures}, indent=2))
     sys.exit(1 if failures else 0)
 
