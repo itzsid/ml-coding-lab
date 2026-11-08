@@ -242,7 +242,9 @@ For y = x² + 3x + 1:
 - dy/dx = 2x + 3
 
 ### Task
-Implement forward pass and gradient computation for simple functions.
+Implement two functions:
+1. \`compute_gradients(x)\`: forward pass and derivative of y = x² + 3x + 1. Return \`{'y': ..., 'grad': ...}\`
+2. \`linear_layer_gradients(X, W, b, grad_output)\`: backward pass of Y = X @ W + b. Return \`{'grad_W': X.T @ grad_output, 'grad_b': grad_output summed over the batch, 'grad_X': grad_output @ W.T}\`
     `,
     examples: [
       {
@@ -575,8 +577,8 @@ def binary_cross_entropy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
       {
         id: '3',
         description: 'Cross-entropy on a batch and BCE',
-        input: '(round(cross_entropy_loss(np.array([[1.0, 2.0, 3.0], [1.0, 1.0, 1.0]]), np.array([2, 0])), 4), round(binary_cross_entropy(np.array([0.9, 0.2]), np.array([1.0, 0.0])), 4))',
-        expected: '1.215542',
+        input: '(lambda: (round(cross_entropy_loss(np.array([[1.0, 2.0, 3.0], [1.0, 1.0, 1.0]]), np.array([2, 0])), 4), round(binary_cross_entropy(np.array([0.9, 0.2]), np.array([1.0, 0.0])), 4)))()',
+        expected: '(0.7531, 0.1643)',
         hidden: true,
       },
     ],

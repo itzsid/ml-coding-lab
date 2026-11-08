@@ -179,7 +179,7 @@ Implement a linear noise schedule for diffusion models.
 
 ### Linear Schedule
 \`\`\`
-β_t = β_start + t * (β_end - β_start) / T
+β_t = β_start + t * (β_end - β_start) / (T - 1)
 
 where t = 0, 1, ..., T-1
 \`\`\`
@@ -372,7 +372,7 @@ z_q = z_e + stop_gradient(z_q - z_e)
 
 ### VQ-VAE Loss Components
 \`\`\`
-L = reconstruction + β * ||sg[z_e] - e||² + ||z_e - sg[e]||²
+L = reconstruction + ||sg[z_e] - e||² + β * ||z_e - sg[e]||²
 \`\`\`
 - **Codebook loss**: Moves embeddings toward encoder outputs
 - **Commitment loss**: Commits encoder to embeddings
