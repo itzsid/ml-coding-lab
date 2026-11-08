@@ -98,7 +98,7 @@ Implement the VAE loss function: reconstruction loss + KL divergence.
 L = L_reconstruction + L_KL
 
 L_reconstruction = MSE(x, x_reconstructed)
-L_KL = -0.5 * sum(1 + log_var - mu² - exp(log_var))
+L_KL = -0.5 * sum(1 + log_var - mu² - exp(log_var))   # sum over latent dims, mean over batch
 \`\`\`
 
 ### Intuition
@@ -144,7 +144,7 @@ def vae_loss(x, x_reconstructed, mu, log_var):
         id: '2',
         description: 'Non-zero KL',
         input: '(np.zeros((1, 4)), np.zeros((1, 4)), np.ones((1, 2)), np.zeros((1, 2)))',
-        expected: '(0.3161, 0.0, 0.3161)',
+        expected: '(1.0, 0.0, 1.0)',
         hidden: true,
       },
     ],
@@ -160,7 +160,7 @@ def vae_loss(x, x_reconstructed, mu, log_var):
     recon_loss = np.mean((x - x_reconstructed) ** 2)
 
     # KL divergence
-    kl_loss = -0.5 * np.mean(1 + log_var - mu**2 - np.exp(log_var))
+    kl_loss = -0.5 * np.mean(np.sum(1 + log_var - mu**2 - np.exp(log_var), axis=1))
 
     total_loss = recon_loss + kl_loss
 

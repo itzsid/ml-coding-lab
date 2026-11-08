@@ -39,9 +39,16 @@ export default function ProblemPage() {
   const [mobileTab, setMobileTab] = useState<'problem' | 'code'>('problem');
   const { isDark } = useDarkMode();
 
-  // Load saved code or starter code
+  // Load saved code or starter code — only when the problem itself changes.
+  // getProblemProgress changes identity on every progress update (autosave,
+  // test completion), so without this guard each autosave would reset the
+  // edited test cases and jump the description tab back to "Description".
+  const loadedProblemKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (problem && sectionId) {
+      const key = `${sectionId}/${problem.id}`;
+      if (loadedProblemKeyRef.current === key) return;
+      loadedProblemKeyRef.current = key;
       const savedProgress = getProblemProgress(sectionId, problem.id);
       setCode(savedProgress.code || problem.starterCode);
       setEditableTestCases(problem.testCases);
@@ -233,16 +240,16 @@ export default function ProblemPage() {
       />
       <SuccessBanner show={showCelebration} onDismiss={() => setShowCelebration(false)} />
       {/* Problem Header */}
-      <div className="flex items-center justify-between px-6 py-3 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-500">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 sm:px-6 py-3 bg-white dark:bg-dark-800 border-b border-gray-200 dark:border-dark-500">
+        <div className="flex items-center gap-3 min-w-0">
           <Link
             to={`/section/${sectionId}`}
-            className="text-gray-500 dark:text-dark-200 hover:text-gray-900 dark:hover:text-dark-100 transition-colors"
+            className="shrink-0 text-gray-500 dark:text-dark-200 hover:text-gray-900 dark:hover:text-dark-100 transition-colors"
           >
-            &larr; {section.title}
+            &larr; <span className="hidden sm:inline">{section.title}</span>
           </Link>
-          <span className="text-gray-300 dark:text-dark-500">/</span>
-          <span className="text-gray-900 dark:text-dark-100 font-medium">{problem.title}</span>
+          <span className="hidden sm:inline text-gray-300 dark:text-dark-500">/</span>
+          <span className="text-gray-900 dark:text-dark-100 font-medium truncate">{problem.title}</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -273,16 +280,16 @@ export default function ProblemPage() {
             )}
           </div>
 
-          <span className="text-gray-300 dark:text-dark-500">|</span>
+          <span className="hidden sm:inline text-gray-300 dark:text-dark-500">|</span>
 
           {!isReady && (
-            <span className="text-gray-500 dark:text-dark-200 text-sm flex items-center gap-2">
+            <span className="text-gray-500 dark:text-dark-200 text-sm hidden sm:flex items-center gap-2">
               <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
               {isLoading ? 'Loading Python...' : 'Python ready'}
             </span>
           )}
           {isReady && (
-            <span className="text-gray-500 dark:text-dark-200 text-sm flex items-center gap-2">
+            <span className="text-gray-500 dark:text-dark-200 text-sm hidden sm:flex items-center gap-2">
               <div className="w-2 h-2 bg-accent-500 rounded-full" />
               Python ready
             </span>
@@ -321,7 +328,7 @@ export default function ProblemPage() {
             <div className="flex-1 overflow-y-auto p-4">
               <ProblemDescription problem={problem} />
               <Examples examples={problem.examples} />
-              <Hints hints={problem.hints} solution={problem.solution} />
+              <Hints hints={problem.hints} solution={problem.solution} onLoadToEditor={(s) => { setCode(s); setMobileTab('code'); }} />
             </div>
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">

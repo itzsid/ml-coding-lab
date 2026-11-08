@@ -189,7 +189,7 @@ elif isinstance(result, tuple):
         elif isinstance(item, np.ndarray):
             converted.append(item.tolist())
         elif isinstance(item, (np.floating, float)):
-            converted.append(round(float(item), 6))
+            converted.append(round(float(item), 6) + 0.0)  # + 0.0 normalizes -0.0
         elif isinstance(item, (np.integer, int)):
             converted.append(int(item))
         else:
@@ -198,7 +198,7 @@ elif isinstance(result, tuple):
 elif isinstance(result, (list, dict)):
     result_str = json.dumps(result)
 elif isinstance(result, (np.floating, float)):
-    result_str = str(round(float(result), 6))
+    result_str = str(round(float(result), 6) + 0.0)
 elif isinstance(result, (np.integer, int)):
     result_str = str(int(result))
 else:
@@ -240,7 +240,7 @@ elif isinstance(result, tuple):
         elif isinstance(item, np.ndarray):
             converted.append(item.tolist())
         elif isinstance(item, (np.floating, float)):
-            converted.append(round(float(item), 6))
+            converted.append(round(float(item), 6) + 0.0)  # + 0.0 normalizes -0.0
         elif isinstance(item, (np.integer, int)):
             converted.append(int(item))
         else:
@@ -249,7 +249,7 @@ elif isinstance(result, tuple):
 elif isinstance(result, (list, dict)):
     result_str = json.dumps(result)
 elif isinstance(result, (np.floating, float)):
-    result_str = str(round(float(result), 6))
+    result_str = str(round(float(result), 6) + 0.0)
 elif isinstance(result, (np.integer, int)):
     result_str = str(int(result))
 else:
