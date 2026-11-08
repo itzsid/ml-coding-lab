@@ -1557,4 +1557,323 @@ def test_cnn():
     return logits.shape == (4, 10)
 `,
   },
+  {
+    id: 'e2e-mini-gpt',
+    title: 'Mini GPT (Character-Level Language Model)',
+    section: 'e2e-implementations',
+    difficulty: 'hard',
+    description: `
+## Mini GPT: a Character-Level Language Model
+
+Put the pieces together into a tiny decoder-only Transformer, the same architecture as GPT-2 (just very small), and run it end to end: forward pass, next-token loss, training and greedy generation.
+
+### Architecture
+\`\`\`
+idx (B, T) integer token ids, T <= block_size
+x = tok_emb[idx] + pos_emb[:T]                       # (B, T, C)
+for each block:                                      # pre-norm residual blocks
+    x = x + Attn(LN1(x))                             # causal multi-head self-attention
+    x = x + MLP(LN2(x))                              # MLP(h) = gelu(h W_1 + b_1) W_2 + b_2
+h = LN_f(x)                                          # final LayerNorm
+logits = h @ W_lm                                    # (B, T, V)
+\`\`\`
+
+**Causal self-attention** with \`H\` heads, \`d_head = C / H\`:
+\`\`\`
+q, k, v = split(x @ W_qkv, 3, axis=-1)               # each (B, T, C); W_qkv columns are [Q | K | V]
+reshape each to (B, H, T, d_head)                    # head h uses columns h*d_head:(h+1)*d_head
+scores = q @ k^T / sqrt(d_head), masked to -inf where key position > query position
+out = softmax(scores) @ v -> back to (B, T, C) -> @ W_o
+\`\`\`
+LayerNorm uses \`eps = 1e-5\`; GELU is the tanh approximation (both helpers are provided).
+
+### Loss
+Mean cross-entropy of the next token over all \`B*T\` positions: \`targets[b, t]\` is the token that follows \`idx[b, t]\`. With the small (std 0.02) initialization the logits start near 0, so the **initial loss is about \`log(V)\`**: the model starts out guessing uniformly.
+
+### Generation (greedy)
+Repeat \`max_new_tokens\` times: crop the context to the last \`block_size\` tokens, run \`forward\`, take the **argmax** of the logits at the last position and append it.
+
+### Training
+\`train_step\` (provided in the NumPy track) does one SGD step on the LM head only, using \`dL/dlogits = (softmax - one_hot) / N\`. You write the loop.
+
+### Expected Return Format
+- \`MiniGPT(vocab_size, d_model=16, n_heads=2, n_layers=1, block_size=8)\`
+- \`model.forward(idx)\`: logits \`(B, T, vocab_size)\`
+- \`model.loss(idx, targets)\`: mean cross-entropy (scalar)
+- \`model.generate(idx, max_new_tokens)\`: integer array \`(B, T + max_new_tokens)\` that starts with \`idx\`
+- \`train(model, idx, targets, steps, lr)\`: list of \`steps\` losses, each computed **before** that step's update
+`,
+    examples: [
+      {
+        input: 'model = MiniGPT(vocab_size=5); model.forward(np.zeros((2, 8), dtype=int)).shape',
+        output: '(2, 8, 5)',
+      },
+      {
+        input: 'model.loss(idx, targets)',
+        output: '≈ 1.609 (= log 5)',
+        explanation: 'Untrained model is close to uniform.',
+      },
+      {
+        input: 'model.generate(np.array([[0, 1, 2]]), 5).shape',
+        output: '(1, 8)',
+      },
+    ],
+    starterCode: `import numpy as np
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    var = x.var(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(var + eps) * gamma + beta
+
+
+def gelu(x):
+    # tanh approximation (GPT-2)
+    return 0.5 * x * (1.0 + np.tanh(np.sqrt(2.0 / np.pi) * (x + 0.044715 * x ** 3)))
+
+
+def softmax(x, axis=-1):
+    e = np.exp(x - x.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+class MiniGPT:
+    """A tiny character-level GPT: pre-norm decoder blocks, untied LM head."""
+
+    def __init__(self, vocab_size, d_model=16, n_heads=2, n_layers=1, block_size=8, seed=0):
+        rng = np.random.default_rng(seed)
+
+        def normal(*shape):
+            return rng.normal(0.0, 0.02, size=shape)  # GPT-2 style small init
+
+        self.vocab_size, self.d_model = vocab_size, d_model
+        self.n_heads, self.block_size = n_heads, block_size
+        self.tok_emb = normal(vocab_size, d_model)   # (V, C)
+        self.pos_emb = normal(block_size, d_model)   # (block_size, C)
+        self.blocks = []
+        for _ in range(n_layers):
+            self.blocks.append({
+                'ln1_g': np.ones(d_model), 'ln1_b': np.zeros(d_model),
+                'W_qkv': normal(d_model, 3 * d_model),    # columns: [Q | K | V]
+                'W_o': normal(d_model, d_model),
+                'ln2_g': np.ones(d_model), 'ln2_b': np.zeros(d_model),
+                'W_1': normal(d_model, 4 * d_model), 'b_1': np.zeros(4 * d_model),
+                'W_2': normal(4 * d_model, d_model), 'b_2': np.zeros(d_model),
+            })
+        self.lnf_g, self.lnf_b = np.ones(d_model), np.zeros(d_model)
+        self.W_lm = normal(d_model, vocab_size)      # (C, V)
+
+    def attention(self, x, blk):
+        """Causal multi-head self-attention. x: (B, T, C) -> (B, T, C)"""
+        # Your code here
+        pass
+
+    def hidden_states(self, idx):
+        """Embeddings -> blocks -> final LayerNorm. idx: (B, T) -> (B, T, C)"""
+        # Your code here
+        pass
+
+    def forward(self, idx):
+        """Return logits (B, T, vocab_size)."""
+        # Your code here
+        pass
+
+    def loss(self, idx, targets):
+        """Mean next-token cross-entropy (float)."""
+        # Your code here
+        pass
+
+    def generate(self, idx, max_new_tokens):
+        """Greedy decoding. Returns (B, T + max_new_tokens)."""
+        # Your code here
+        pass
+
+    def train_step(self, idx, targets, lr=1.0):
+        """(Provided) One SGD step on the LM head W_lm only; everything else stays frozen.
+        For mean cross-entropy, dL/dlogits = (softmax(logits) - one_hot(targets)) / N."""
+        h = self.hidden_states(idx)                  # (B, T, C)
+        probs = softmax(h @ self.W_lm)               # (B, T, V)
+        dlogits = (probs - np.eye(self.vocab_size)[targets]) / targets.size
+        grad = h.reshape(-1, self.d_model).T @ dlogits.reshape(-1, self.vocab_size)
+        self.W_lm -= lr * grad
+
+
+def train(model, idx, targets, steps=20, lr=1.0):
+    """Call model.train_step \`steps\` times. Return the list of losses,
+    each computed before that step's update."""
+    # Your code here
+    pass
+`,
+    testCases: [
+      {
+        id: '1',
+        description: 'forward returns (B, T, vocab_size)',
+        input: 'MiniGPT(5).forward(np.random.randint(0, 5, size=(2, 8))).shape',
+        expected: '(2, 8, 5)',
+        hidden: false,
+      },
+      {
+        id: '2',
+        description: 'Causal: changing a future token leaves earlier logits unchanged',
+        input: '(lambda m, a: (lambda b: bool(np.allclose(m.forward(a)[:, :5], m.forward(b)[:, :5]) and not np.allclose(m.forward(a)[:, 5:], m.forward(b)[:, 5:])))(np.concatenate([a[:, :5], (a[:, 5:] + 1) % 5], axis=1)))(MiniGPT(5, n_layers=2), np.random.randint(0, 5, size=(2, 8)))',
+        expected: 'True',
+        hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Initial loss is about log(vocab_size)',
+        input: '(lambda: (seq := np.array([[i % 5 for i in range(9)], [(i + 2) % 5 for i in range(9)]]), bool(abs(MiniGPT(5).loss(seq[:, :-1], seq[:, 1:]) - np.log(5)) < 0.1))[-1])()',
+        expected: 'True',
+        hidden: false,
+      },
+      {
+        id: '4',
+        description: 'generate keeps the prompt and appends max_new_tokens tokens',
+        input: '(lambda out: (out.shape, out[:, :3].tolist()))(MiniGPT(5).generate(np.array([[0, 1, 2]]), 5))',
+        expected: '((1, 8), [[0, 1, 2]])',
+        hidden: false,
+      },
+      {
+        id: '5',
+        description: 'Training reduces the loss',
+        input: '(lambda: (seq := np.array([[i % 5 for i in range(9)], [(i + 2) % 5 for i in range(9)]]), losses := train(MiniGPT(5), seq[:, :-1], seq[:, 1:], steps=20, lr=1.0), bool(len(losses) == 20 and losses[-1] < losses[0] - 0.5))[-1])()',
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '6',
+        description: 'Generation is greedy (argmax of the last-position logits)',
+        input: '(lambda m, p: bool(m.generate(p, 1)[0, -1] == m.forward(p)[0, -1].argmax()))(MiniGPT(5, seed=3), np.array([[4, 1, 3]]))',
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '7',
+        description: 'After training, generation continues the cycle',
+        input: '(lambda: (seq := np.array([[i % 5 for i in range(9)], [(i + 2) % 5 for i in range(9)]]), m := MiniGPT(5), train(m, seq[:, :-1], seq[:, 1:], steps=30, lr=2.0), m.generate(np.array([[0, 1, 2]]), 5).tolist())[-1])()',
+        expected: '[[0, 1, 2, 3, 4, 0, 1, 2]]',
+        hidden: true,
+      },
+      {
+        id: '8',
+        description: 'generate crops the context to block_size',
+        input: 'MiniGPT(5, block_size=8).generate(np.array([[0, 1, 2, 3, 4, 0]]), 6).shape',
+        expected: '(1, 12)',
+        hidden: true,
+      },
+      {
+        id: '9',
+        description: 'Exact logits for a fixed seed (architecture details)',
+        input: 'round(float(np.abs(MiniGPT(5, n_layers=2, seed=1).forward(np.array([[0, 1, 2, 3, 4, 0, 1, 2]])) * 1000).sum()), 4)',
+        expected: '2475.9754',
+        hidden: true,
+      },
+    ],
+    hints: [
+      'Attention: q, k, v = np.split(x @ W_qkv, 3, axis=-1); reshape each to (B, T, H, d_head) and transpose to (B, H, T, d_head). Mask with np.triu(..., k=1) before the softmax.',
+      'hidden_states: x = tok_emb[idx] + pos_emb[:T]; each block does x += attn(LN1(x)) then x += MLP(LN2(x)); finish with the final LayerNorm.',
+      'loss: stable log-softmax over the last axis, pick the target log-probs with np.take_along_axis, return -mean as a float.',
+      'generate: loop max_new_tokens times on idx[:, -block_size:], take argmax at the last position, np.concatenate it onto idx.',
+    ],
+    solution: `import numpy as np
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    var = x.var(axis=-1, keepdims=True)
+    return (x - mu) / np.sqrt(var + eps) * gamma + beta
+
+
+def gelu(x):
+    # tanh approximation (GPT-2)
+    return 0.5 * x * (1.0 + np.tanh(np.sqrt(2.0 / np.pi) * (x + 0.044715 * x ** 3)))
+
+
+def softmax(x, axis=-1):
+    e = np.exp(x - x.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+class MiniGPT:
+    """A tiny character-level GPT: pre-norm decoder blocks, untied LM head."""
+
+    def __init__(self, vocab_size, d_model=16, n_heads=2, n_layers=1, block_size=8, seed=0):
+        rng = np.random.default_rng(seed)
+
+        def normal(*shape):
+            return rng.normal(0.0, 0.02, size=shape)  # GPT-2 style small init
+
+        self.vocab_size, self.d_model = vocab_size, d_model
+        self.n_heads, self.block_size = n_heads, block_size
+        self.tok_emb = normal(vocab_size, d_model)   # (V, C)
+        self.pos_emb = normal(block_size, d_model)   # (block_size, C)
+        self.blocks = []
+        for _ in range(n_layers):
+            self.blocks.append({
+                'ln1_g': np.ones(d_model), 'ln1_b': np.zeros(d_model),
+                'W_qkv': normal(d_model, 3 * d_model),    # columns: [Q | K | V]
+                'W_o': normal(d_model, d_model),
+                'ln2_g': np.ones(d_model), 'ln2_b': np.zeros(d_model),
+                'W_1': normal(d_model, 4 * d_model), 'b_1': np.zeros(4 * d_model),
+                'W_2': normal(4 * d_model, d_model), 'b_2': np.zeros(d_model),
+            })
+        self.lnf_g, self.lnf_b = np.ones(d_model), np.zeros(d_model)
+        self.W_lm = normal(d_model, vocab_size)      # (C, V)
+
+    def attention(self, x, blk):
+        B, T, C = x.shape
+        H = self.n_heads
+        d_head = C // H
+        q, k, v = np.split(x @ blk['W_qkv'], 3, axis=-1)                 # each (B, T, C)
+        q, k, v = (a.reshape(B, T, H, d_head).transpose(0, 2, 1, 3) for a in (q, k, v))
+        scores = q @ k.transpose(0, 1, 3, 2) / np.sqrt(d_head)            # (B, H, T, T)
+        future = np.triu(np.ones((T, T), dtype=bool), k=1)
+        scores = np.where(future, -np.inf, scores)
+        out = softmax(scores) @ v                                          # (B, H, T, d_head)
+        out = out.transpose(0, 2, 1, 3).reshape(B, T, C)
+        return out @ blk['W_o']
+
+    def hidden_states(self, idx):
+        T = idx.shape[1]
+        x = self.tok_emb[idx] + self.pos_emb[:T]
+        for blk in self.blocks:
+            x = x + self.attention(layer_norm(x, blk['ln1_g'], blk['ln1_b']), blk)
+            h = layer_norm(x, blk['ln2_g'], blk['ln2_b'])
+            x = x + gelu(h @ blk['W_1'] + blk['b_1']) @ blk['W_2'] + blk['b_2']
+        return layer_norm(x, self.lnf_g, self.lnf_b)
+
+    def forward(self, idx):
+        return self.hidden_states(idx) @ self.W_lm
+
+    def loss(self, idx, targets):
+        logits = self.forward(idx)
+        m = logits.max(axis=-1, keepdims=True)
+        log_probs = logits - m - np.log(np.exp(logits - m).sum(axis=-1, keepdims=True))
+        picked = np.take_along_axis(log_probs, targets[..., None], axis=-1)
+        return float(-picked.mean())
+
+    def generate(self, idx, max_new_tokens):
+        for _ in range(max_new_tokens):
+            context = idx[:, -self.block_size:]
+            next_logits = self.forward(context)[:, -1, :]
+            next_token = next_logits.argmax(axis=-1)[:, None]
+            idx = np.concatenate([idx, next_token], axis=1)
+        return idx
+
+    def train_step(self, idx, targets, lr=1.0):
+        """(Provided) One SGD step on the LM head W_lm only; everything else stays frozen.
+        For mean cross-entropy, dL/dlogits = (softmax(logits) - one_hot(targets)) / N."""
+        h = self.hidden_states(idx)                  # (B, T, C)
+        probs = softmax(h @ self.W_lm)               # (B, T, V)
+        dlogits = (probs - np.eye(self.vocab_size)[targets]) / targets.size
+        grad = h.reshape(-1, self.d_model).T @ dlogits.reshape(-1, self.vocab_size)
+        self.W_lm -= lr * grad
+
+
+def train(model, idx, targets, steps=20, lr=1.0):
+    losses = []
+    for _ in range(steps):
+        losses.append(model.loss(idx, targets))
+        model.train_step(idx, targets, lr)
+    return losses
+`,
+  },
 ];
