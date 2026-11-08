@@ -1598,4 +1598,188 @@ def train(model, idx, targets, steps=20, lr=1e-2):
       'train: optimizer = torch.optim.AdamW(model.parameters(), lr=lr); loop zero_grad, loss.backward(), step; record loss.item().',
     ],
   },
+  'e2e-vit-classifier': {
+    note: 'nn.Linear, nn.LayerNorm and F.gelu(approximate=\'tanh\') are fine; write the multi-head attention yourself (no nn.MultiheadAttention or F.scaled_dot_product_attention). train_step updates every parameter with plain SGD via autograd.',
+    starterCode: `import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class TinyViT(nn.Module):
+    def __init__(self, img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2,
+                 mlp_dim=32, num_classes=2, use_pos_emb=True):
+        """
+        Patch embedding (nn.Linear), CLS token and position embeddings (nn.Parameter,
+        ~ N(0, 0.02^2)), one pre-norm encoder block, final LayerNorm and a linear head.
+        """
+        super().__init__()
+        self.patch_size = patch_size
+        self.num_heads = num_heads
+        self.use_pos_emb = use_pos_emb
+        # Your code here
+
+    def patchify(self, x):
+        """(B, C, H, W) -> (B, N, P*P*C), patches row-major, flattened as (p1, p2, c)."""
+        # Your code here
+        pass
+
+    def cls_features(self, x):
+        """Final-LayerNormed CLS token, (B, D)."""
+        # Your code here
+        pass
+
+    def forward(self, x):
+        """Logits (B, num_classes)."""
+        # Your code here
+        pass
+
+    def loss(self, x, y):
+        """Mean cross-entropy as a Python float."""
+        # Your code here
+        pass
+
+    def train_step(self, x, y, lr=0.1):
+        """One plain SGD step on ALL parameters; returns the loss before the step (float)."""
+        # Your code here
+        pass
+`,
+    solution: `import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class TinyViT(nn.Module):
+    def __init__(self, img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2,
+                 mlp_dim=32, num_classes=2, use_pos_emb=True):
+        super().__init__()
+        self.patch_size = patch_size
+        self.num_heads = num_heads
+        self.use_pos_emb = use_pos_emb
+        n_patches = (img_size // patch_size) ** 2
+
+        self.patch_embed = nn.Linear(patch_size * patch_size * in_chans, dim)
+        self.cls = nn.Parameter(torch.randn(dim) * 0.02)
+        self.pos = nn.Parameter(torch.randn(n_patches + 1, dim) * 0.02)
+        self.ln1 = nn.LayerNorm(dim)
+        self.qkv = nn.Linear(dim, 3 * dim, bias=False)
+        self.proj = nn.Linear(dim, dim, bias=False)
+        self.ln2 = nn.LayerNorm(dim)
+        self.fc1 = nn.Linear(dim, mlp_dim)
+        self.fc2 = nn.Linear(mlp_dim, dim)
+        self.ln_f = nn.LayerNorm(dim)
+        self.head = nn.Linear(dim, num_classes)
+
+    def patchify(self, x):
+        B, C, H, W = x.shape
+        P = self.patch_size
+        x = x.reshape(B, C, H // P, P, W // P, P).permute(0, 2, 4, 3, 5, 1)   # b h w p1 p2 c
+        return x.reshape(B, (H // P) * (W // P), P * P * C)
+
+    def attention(self, h):
+        B, T, D = h.shape
+        nh, hd = self.num_heads, D // self.num_heads
+        q, k, v = self.qkv(h).chunk(3, dim=-1)
+        q, k, v = (a.reshape(B, T, nh, hd).transpose(1, 2) for a in (q, k, v))   # (B, nh, T, hd)
+        att = F.softmax(q @ k.transpose(-2, -1) / math.sqrt(hd), dim=-1)
+        out = (att @ v).transpose(1, 2).reshape(B, T, D)
+        return self.proj(out)
+
+    def cls_features(self, x):
+        tokens = self.patch_embed(self.patchify(x))                          # (B, N, D)
+        cls = self.cls.expand(x.shape[0], 1, -1)
+        t = torch.cat([cls, tokens], dim=1)                                  # (B, N+1, D)
+        if self.use_pos_emb:
+            t = t + self.pos
+        t = t + self.attention(self.ln1(t))
+        t = t + self.fc2(F.gelu(self.fc1(self.ln2(t)), approximate='tanh'))
+        return self.ln_f(t[:, 0])
+
+    def forward(self, x):
+        return self.head(self.cls_features(x))
+
+    def loss(self, x, y):
+        with torch.no_grad():
+            return F.cross_entropy(self.forward(x), y).item()
+
+    def train_step(self, x, y, lr=0.1):
+        self.zero_grad()
+        loss = F.cross_entropy(self.forward(x), y)
+        loss.backward()
+        with torch.no_grad():
+            for p in self.parameters():
+                p -= lr * p.grad
+        return loss.item()
+`,
+    testCases: [
+      {
+        id: '1',
+        description: 'Logits shape',
+        input: 'tuple(TinyViT(img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2, num_classes=3)(torch.randn(4, 1, 8, 8)).shape)',
+        expected: '(4, 3)',
+        hidden: false,
+      },
+      {
+        id: '2',
+        description: 'Patchify order (p1, p2, c)',
+        input: '(lambda pt: (tuple(pt.shape), pt[0, 0].tolist(), pt[0, 3].tolist()))(TinyViT(img_size=4, patch_size=2, in_chans=2).patchify(torch.arange(32.0).reshape(1, 2, 4, 4)))',
+        expected: '((1, 4, 8), [0.0, 16.0, 1.0, 17.0, 4.0, 20.0, 5.0, 21.0], [10.0, 26.0, 11.0, 27.0, 14.0, 30.0, 15.0, 31.0])',
+        hidden: false,
+      },
+      {
+        id: '3',
+        description: 'Patchify + Linear equals a stride-P convolution',
+        input: `(lambda: (
+    m := TinyViT(img_size=8, patch_size=4, in_chans=3, dim=16),
+    x := torch.randn(2, 3, 8, 8),
+    w := m.patch_embed.weight.detach().reshape(16, 4, 4, 3).permute(0, 3, 1, 2),
+    ref := F.conv2d(x, w, m.patch_embed.bias.detach(), stride=4).flatten(2).transpose(1, 2),
+    bool(torch.allclose(m.patch_embed(m.patchify(x)).detach(), ref, atol=1e-5))
+)[-1])()`,
+        expected: 'True',
+        hidden: false,
+      },
+      {
+        id: '4',
+        description: 'Without pos-emb, permuting patches leaves the CLS output unchanged',
+        input: `(lambda: (
+    m := TinyViT(img_size=8, patch_size=4, use_pos_emb=False),
+    x := torch.randn(2, 1, 8, 8),
+    x_perm := torch.roll(torch.roll(x, 4, dims=-1), 4, dims=-2),
+    bool(torch.allclose(m.cls_features(x), m.cls_features(x_perm), atol=1e-5) and not torch.allclose(x, x_perm))
+)[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '5',
+        description: 'With pos-emb, permuting patches changes the CLS output',
+        input: `(lambda: (
+    m := TinyViT(img_size=8, patch_size=4, use_pos_emb=True),
+    x := torch.randn(2, 1, 8, 8),
+    bool(not torch.allclose(m.cls_features(x), m.cls_features(torch.roll(x, 4, dims=-1)), atol=1e-5))
+)[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '6',
+        description: 'A few training steps reduce the loss (all parameters get gradients)',
+        input: `(lambda: (
+    m := TinyViT(),
+    x := (torch.randn(8, 1, 8, 8) * 0.3 + (torch.arange(8) % 2).view(8, 1, 1, 1).float() * (torch.arange(8).view(1, 1, 8, 1) < 4).float()),
+    y := torch.arange(8) % 2,
+    losses := [m.train_step(x, y, 0.1) for _ in range(15)],
+    bool(len(losses) == 15 and m.loss(x, y) < 0.5 * losses[0] and all(p.grad is not None for p in m.parameters()))
+)[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+    ],
+    hints: [
+      'patchify: x.reshape(B, C, H//P, P, W//P, P).permute(0, 2, 4, 3, 5, 1).reshape(B, N, P*P*C).',
+      'Prepend CLS with torch.cat([self.cls.expand(B, 1, -1), tokens], dim=1).',
+      'Attention: self.qkv(h).chunk(3, dim=-1), reshape to (B, T, heads, d_head).transpose(1, 2), softmax(Q @ K^T / sqrt(d_head)) @ V.',
+      'train_step: zero_grad, loss.backward(), then under torch.no_grad() do p -= lr * p.grad for every parameter.',
+    ],
+  },
 };

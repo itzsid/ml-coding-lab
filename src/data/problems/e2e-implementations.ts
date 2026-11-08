@@ -1876,4 +1876,277 @@ def train(model, idx, targets, steps=20, lr=1.0):
     return losses
 `,
   },
+  {
+    id: 'e2e-vit-classifier',
+    title: 'E2E: Tiny Vision Transformer',
+    section: 'e2e-implementations',
+    difficulty: 'hard',
+    description: `
+## End-to-End Tiny Vision Transformer (ViT)
+
+A Vision Transformer treats an image as a **sequence of patches**: cut it into \`P x P\` tiles, embed each tile linearly, prepend a learnable **[CLS]** token, add **position embeddings**, run a Transformer encoder, and classify from the final CLS token.
+
+Build \`TinyViT\` with **one pre-norm encoder block**.
+
+### Architecture
+\`\`\`
+x (B, C, H, W)
+  │ patchify                  (B, N, P*P*C)       N = (H/P) * (W/P)
+  │ @ W_patch + b_patch       (B, N, D)
+  │ prepend CLS token         (B, N+1, D)
+  │ + pos_emb (N+1, D)        (only if use_pos_emb)
+  ▼
+  t = t + MHA(LN1(t))         pre-norm attention with residual
+  t = t + MLP(LN2(t))         MLP: Linear(D, mlp_dim) -> GELU -> Linear(mlp_dim, D)
+  ▼
+  cls = LN_f(t[:, 0])         (B, D)      <- cls_features(x)
+  logits = cls @ W_head + b_head  (B, num_classes)
+\`\`\`
+
+### Details
+- **Patch order**: patches in row-major order over the \`(H/P, W/P)\` grid; inside a patch, flatten as \`(p1, p2, c)\`, i.e. einops \`'b c (h p1) (w p2) -> b (h w) (p1 p2 c)'\`. This matches a stride-\`P\` convolution.
+- **MHA**: \`qkv = h @ W_qkv\` (no bias) split into \`Q, K, V\` of width \`D\`; reshape to \`num_heads\` heads of size \`D / num_heads\`; \`softmax(Q K^T / sqrt(d_head)) V\`; merge heads; output projection \`@ W_o\` (no bias). No mask: every token attends to every token.
+- **LayerNorm**: over the last dimension, \`eps = 1e-5\`, with learnable gain (init 1) and bias (init 0).
+- **GELU**: tanh approximation, \`0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))\`.
+- **Initialization**: weights \`~ N(0, 1/fan_in)\`, biases 0, CLS token and position embeddings \`~ N(0, 0.02^2)\`.
+
+### Why position embeddings matter
+Self-attention is **permutation-equivariant**, and the CLS token attends to all patches with the same weights regardless of where they are. So **without** position embeddings, shuffling the patches of an image leaves the CLS output (and the prediction) unchanged. Position embeddings are the only source of spatial order.
+
+### Methods to implement
+- \`patchify(x)\`: \`(B, C, H, W) -> (B, N, P*P*C)\`
+- \`cls_features(x)\`: final-LayerNormed CLS token, \`(B, D)\`
+- \`forward(x)\`: logits, \`(B, num_classes)\`
+- \`loss(x, y)\`: mean cross-entropy (float), with integer labels \`y\`
+- \`train_step(x, y, lr)\`: one plain SGD step on \`loss(x, y)\`; returns the loss **before** the step (float).
+  - **NumPy track**: update only the classification head (\`W_head\`, \`b_head\`); the encoder stays frozen (a *linear probe*). Its gradient is \`dlogits = (softmax(logits) - onehot(y)) / B\`, \`dW_head = cls^T @ dlogits\`, \`db_head = dlogits.sum(0)\`.
+  - **PyTorch track**: autograd updates **every** parameter.
+
+### Constructor
+\`TinyViT(img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2, mlp_dim=32, num_classes=2, use_pos_emb=True)\`
+    `,
+    examples: [
+      {
+        input: 'TinyViT(img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2, num_classes=3).forward(np.random.randn(4, 1, 8, 8))',
+        output: 'logits of shape (4, 3)',
+        explanation: '4 patches of 4x4 pixels -> 5 tokens (with CLS) of width 16 -> CLS head.',
+      },
+      {
+        input: 'model.patchify(np.arange(32.).reshape(1, 2, 4, 4)) with patch_size=2',
+        output: 'shape (1, 4, 8); first patch [0, 16, 1, 17, 4, 20, 5, 21]',
+        explanation: 'Order (p1, p2, c): pixel (0,0) of both channels, then pixel (0,1), then (1,0), then (1,1).',
+      },
+    ],
+    starterCode: `import numpy as np
+
+class TinyViT:
+    def __init__(self, img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2,
+                 mlp_dim=32, num_classes=2, use_pos_emb=True):
+        """
+        Create all parameters (weights ~ N(0, 1/fan_in), biases 0,
+        CLS token and position embeddings ~ N(0, 0.02^2), LayerNorm gains 1).
+        """
+        self.patch_size = patch_size
+        self.num_heads = num_heads
+        self.use_pos_emb = use_pos_emb
+        # Your code here
+
+    def patchify(self, x):
+        """(B, C, H, W) -> (B, N, P*P*C), patches row-major, flattened as (p1, p2, c)."""
+        # Your code here
+        pass
+
+    def cls_features(self, x):
+        """Embed patches, prepend CLS, add pos-emb, one pre-norm block, final LN on CLS -> (B, D)."""
+        # Your code here
+        pass
+
+    def forward(self, x):
+        """Logits (B, num_classes)."""
+        # Your code here
+        pass
+
+    def loss(self, x, y):
+        """Mean cross-entropy (float)."""
+        # Your code here
+        pass
+
+    def train_step(self, x, y, lr=0.1):
+        """One SGD step on the head (W_head, b_head); returns the loss before the step."""
+        # Your code here
+        pass
+`,
+    testCases: [
+      {
+        id: '1',
+        description: 'Logits shape',
+        input: 'TinyViT(img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2, num_classes=3).forward(np.random.randn(4, 1, 8, 8)).shape',
+        expected: '(4, 3)',
+        hidden: false,
+      },
+      {
+        id: '2',
+        description: 'Patchify order (p1, p2, c)',
+        input: '(lambda pt: (pt.shape, pt[0, 0].tolist(), pt[0, 3].tolist()))(TinyViT(img_size=4, patch_size=2, in_chans=2).patchify(np.arange(32.0).reshape(1, 2, 4, 4)))',
+        expected: '((1, 4, 8), [0.0, 16.0, 1.0, 17.0, 4.0, 20.0, 5.0, 21.0], [10.0, 26.0, 11.0, 27.0, 14.0, 30.0, 15.0, 31.0])',
+        hidden: false,
+      },
+      {
+        id: '3',
+        description: 'CLS features are LayerNormed, shape (B, D)',
+        input: '(lambda f: (f.shape, bool(np.allclose(f.mean(-1), 0, atol=1e-6) and np.allclose(f.std(-1), 1, atol=1e-3))))(TinyViT(dim=16).cls_features(np.random.randn(3, 1, 8, 8)))',
+        expected: '((3, 16), True)',
+        hidden: false,
+      },
+      {
+        id: '4',
+        description: 'Without pos-emb, permuting patches leaves the CLS output unchanged',
+        input: `(lambda: (
+    m := TinyViT(img_size=8, patch_size=4, use_pos_emb=False),
+    x := np.random.randn(2, 1, 8, 8),
+    x_perm := np.roll(np.roll(x, 4, axis=-1), 4, axis=-2),
+    bool(np.allclose(m.cls_features(x), m.cls_features(x_perm), atol=1e-6) and not np.allclose(x, x_perm))
+)[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '5',
+        description: 'With pos-emb, permuting patches changes the CLS output',
+        input: `(lambda: (
+    m := TinyViT(img_size=8, patch_size=4, use_pos_emb=True),
+    x := np.random.randn(2, 1, 8, 8),
+    bool(not np.allclose(m.cls_features(x), m.cls_features(np.roll(x, 4, axis=-1)), atol=1e-6))
+)[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '6',
+        description: 'Loss equals cross-entropy of the logits',
+        input: `(lambda: (
+    m := TinyViT(num_classes=3),
+    x := np.random.randn(5, 1, 8, 8), y := np.array([0, 1, 2, 1, 0]),
+    z := m.forward(x),
+    ref := float(np.mean(np.log(np.exp(z).sum(1)) - z[np.arange(5), y])),
+    bool(abs(m.loss(x, y) - ref) < 1e-6)
+)[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+      {
+        id: '7',
+        description: 'A few training steps reduce the loss',
+        input: `(lambda: (
+    m := TinyViT(),
+    x := (np.random.randn(8, 1, 8, 8) * 0.3 + (np.arange(8) % 2)[:, None, None, None] * (np.arange(8)[None, None, :, None] < 4)),
+    y := np.arange(8) % 2,
+    losses := [m.train_step(x, y, 0.5) for _ in range(20)],
+    bool(len(losses) == 20 and m.loss(x, y) < 0.8 * losses[0])
+)[-1])()`,
+        expected: 'True',
+        hidden: true,
+      },
+    ],
+    hints: [
+      'patchify: reshape to (B, C, H/P, P, W/P, P), transpose to (B, H/P, W/P, P, P, C), then reshape to (B, N, P*P*C).',
+      'Prepend CLS with np.concatenate([np.broadcast_to(cls, (B, 1, D)), tokens], axis=1), then add pos (N+1, D) if use_pos_emb.',
+      'Multi-head attention: split h @ W_qkv into Q, K, V; reshape each to (B, T, heads, d_head) and transpose to (B, heads, T, d_head); scores are Q @ K^T / sqrt(d_head).',
+      'Head-only SGD: dlogits = (softmax(logits) - onehot(y)) / B; W_head -= lr * cls.T @ dlogits; b_head -= lr * dlogits.sum(0).',
+    ],
+    solution: `import numpy as np
+
+
+def layer_norm(x, g, b, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    var = x.var(axis=-1, keepdims=True)
+    return g * (x - mu) / np.sqrt(var + eps) + b
+
+
+def gelu(x):
+    return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x ** 3)))
+
+
+def softmax(x, axis=-1):
+    e = np.exp(x - x.max(axis=axis, keepdims=True))
+    return e / e.sum(axis=axis, keepdims=True)
+
+
+class TinyViT:
+    def __init__(self, img_size=8, patch_size=4, in_chans=1, dim=16, num_heads=2,
+                 mlp_dim=32, num_classes=2, use_pos_emb=True):
+        self.patch_size = patch_size
+        self.num_heads = num_heads
+        self.use_pos_emb = use_pos_emb
+        n_patches = (img_size // patch_size) ** 2
+        patch_dim = patch_size * patch_size * in_chans
+
+        def w(fan_in, fan_out):
+            return np.random.randn(fan_in, fan_out) / np.sqrt(fan_in)
+
+        self.p = {
+            'W_patch': w(patch_dim, dim), 'b_patch': np.zeros(dim),
+            'cls': np.random.randn(dim) * 0.02,
+            'pos': np.random.randn(n_patches + 1, dim) * 0.02,
+            'ln1_g': np.ones(dim), 'ln1_b': np.zeros(dim),
+            'W_qkv': w(dim, 3 * dim), 'W_o': w(dim, dim),
+            'ln2_g': np.ones(dim), 'ln2_b': np.zeros(dim),
+            'W1': w(dim, mlp_dim), 'b1': np.zeros(mlp_dim),
+            'W2': w(mlp_dim, dim), 'b2': np.zeros(dim),
+            'lnf_g': np.ones(dim), 'lnf_b': np.zeros(dim),
+            'W_head': w(dim, num_classes), 'b_head': np.zeros(num_classes),
+        }
+
+    def patchify(self, x):
+        B, C, H, W = x.shape
+        P = self.patch_size
+        x = x.reshape(B, C, H // P, P, W // P, P)          # b c h p1 w p2
+        x = x.transpose(0, 2, 4, 3, 5, 1)                  # b h w p1 p2 c
+        return x.reshape(B, (H // P) * (W // P), P * P * C)
+
+    def attention(self, h):
+        B, T, D = h.shape
+        nh = self.num_heads
+        hd = D // nh
+        q, k, v = np.split(h @ self.p['W_qkv'], 3, axis=-1)                  # (B, T, D) each
+        q, k, v = (a.reshape(B, T, nh, hd).transpose(0, 2, 1, 3) for a in (q, k, v))
+        att = softmax(q @ k.transpose(0, 1, 3, 2) / np.sqrt(hd))            # (B, nh, T, T)
+        out = (att @ v).transpose(0, 2, 1, 3).reshape(B, T, D)
+        return out @ self.p['W_o']
+
+    def cls_features(self, x):
+        p = self.p
+        tokens = self.patchify(x) @ p['W_patch'] + p['b_patch']             # (B, N, D)
+        cls = np.broadcast_to(p['cls'], (x.shape[0], 1, len(p['cls'])))
+        t = np.concatenate([cls, tokens], axis=1)                            # (B, N+1, D)
+        if self.use_pos_emb:
+            t = t + p['pos']
+
+        t = t + self.attention(layer_norm(t, p['ln1_g'], p['ln1_b']))
+        h = layer_norm(t, p['ln2_g'], p['ln2_b'])
+        t = t + gelu(h @ p['W1'] + p['b1']) @ p['W2'] + p['b2']
+        return layer_norm(t[:, 0], p['lnf_g'], p['lnf_b'])
+
+    def forward(self, x):
+        return self.cls_features(x) @ self.p['W_head'] + self.p['b_head']
+
+    def loss(self, x, y):
+        probs = softmax(self.forward(x))
+        return float(-np.mean(np.log(probs[np.arange(len(y)), y] + 1e-12)))
+
+    def train_step(self, x, y, lr=0.1):
+        feats = self.cls_features(x)                                         # encoder is frozen
+        logits = feats @ self.p['W_head'] + self.p['b_head']
+        probs = softmax(logits)
+        B = len(y)
+        loss = float(-np.mean(np.log(probs[np.arange(B), y] + 1e-12)))
+
+        dlogits = probs.copy()
+        dlogits[np.arange(B), y] -= 1
+        dlogits /= B
+        self.p['W_head'] -= lr * feats.T @ dlogits
+        self.p['b_head'] -= lr * dlogits.sum(axis=0)
+        return loss
+`,
+  },
 ];

@@ -291,6 +291,12 @@ Supervised learning is when you train a model on labeled data to make prediction
 - **Regularization**: L2 penalty on weights to maximize margin
 - **Key insight**: Only "support vectors" (points near the boundary) affect the decision boundary
 
+### Beyond Linear Models
+- **k-Nearest Neighbours**: no training; predict by majority vote of the k closest points
+- **Gaussian Naive Bayes**: Bayes' rule with per-class Gaussians, computed in log space with logsumexp
+- **Ridge & Lasso**: L2 shrinks weights smoothly (closed form); L1 sets some exactly to zero (coordinate descent)
+- **Gradient Boosting**: add weak learners (stumps) one at a time, each fit to the residuals of the current model
+
 ### The Interview Perspective
 Interviewers often ask you to:
 - Implement gradient descent from scratch
@@ -331,9 +337,20 @@ Unsupervised learning finds patterns in unlabeled data.
   3. Find eigenvectors/eigenvalues
   4. Project onto top components
 
+### Gaussian Mixtures & EM
+- **Soft clustering**: each point gets a responsibility for every component
+- **EM**: E-step computes responsibilities (in log space), M-step re-fits weights, means and variances
+- **Guarantee**: the log-likelihood never decreases
+
+### DBSCAN
+- **Density-based**: clusters are dense regions; sparse points are labelled noise
+- **Core points** have at least min_samples neighbours within eps; only they grow clusters
+- **No K to choose**, and clusters can have any shape
+
 ### Why These Matter
 - **K-Means**: Customer segmentation, image compression
 - **PCA**: Feature reduction, visualization, noise removal
+- **GMM / DBSCAN**: Density estimation, anomaly detection, non-spherical clusters
 
 ### Interview Tips
 - Be ready to implement K-means from scratch
@@ -373,6 +390,11 @@ Building a model is only half the job. You need to evaluate it properly.
 - **Why**: Single train/test split is unreliable
 - **K-Fold**: Split data into K parts, rotate test set
 - **Stratified**: Maintain class distribution in folds
+
+### Ranking & Calibration
+- **ROC curve**: TPR vs FPR over every score threshold; tied scores form one diagonal step
+- **AUC**: probability a random positive outscores a random negative (ties count half)
+- **Calibration**: do 80%-confidence predictions come true 80% of the time? **ECE** averages the gap over confidence bins
 
 ### Interview Essentials
 - Know when to use each metric
@@ -559,6 +581,9 @@ output = (input - kernel + 2*padding) / stride + 1
 - **AlexNet**: Deep CNNs for ImageNet
 - **VGG**: Very deep, small kernels
 - **ResNet**: Skip connections
+
+### Residual Blocks
+A ResNet basic block computes \`ReLU(F(x) + shortcut(x))\` with \`F = conv-BN-ReLU-conv-BN\`. The shortcut is the identity, or a strided 1x1 conv + BN when the channels or resolution change. If the identity is optimal, the block only has to drive \`F\` to zero, which is what makes 100+ layer networks trainable.
 
 Let's implement CNN operations!
     `,
