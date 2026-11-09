@@ -1,5 +1,5 @@
 > [!WARNING]
-> **Deprecated.** ML Coding Lab has moved to **[ML Grind](https://mlgrind.github.io/)**, developed at
+> **Deprecated.** ML Coding Lab has moved to **[ML Grind](https://mlgrind.dev/)**, developed at
 > [mlgrind/mlgrind.github.io](https://github.com/mlgrind/mlgrind.github.io). This repository is no longer
 > maintained, and https://itzsid.github.io/ml-coding-lab/ redirects to the new site.
 
